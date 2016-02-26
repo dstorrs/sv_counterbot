@@ -14,6 +14,8 @@ nuke_me
 nuke_me.*
 .sass-cache
 out
+out.txt
+out.html
 foo
 foo.rkt
 *.gz
@@ -42,3 +44,4 @@ Icon*
 temp.html
 .git
 .meteor
+*.bbcode
