@@ -1,5 +1,6 @@
 #!/usr/bin/env perl 
 
+
 use warnings;
 use strict;
 use feature ':5.10';
@@ -10,6 +11,7 @@ use Log::Log4perl qw(:easy);
 use constant VERBOSE => 0;
 
 my $VERSION  = 0.9;
+
 
 #
 #    Search '=head1' for docs
@@ -22,17 +24,19 @@ Log::Log4perl->easy_init($ERROR);  # Or $ERROR when not debugging
 my $base_url = 'https://forums.sufficientvelocity.com/';
 my $PLAN_NAME_PREFIX = qr/^\s*\[[X-]\]\s*/i;
 
-my $default_page = 'threads/slivers-in-the-chaos-lands-mtg-multicross.26697/';
-my $FIRST_POST_ID = 0;  #  Set this to, e.g. 1401 in order to skip posts #1-1400 
-
+my $default_page = 'threads/slivers-in-the-chaos-lands-mtg-multicross.26697/page-5';
 
 my $first_page = shift || $default_page;
 $first_page = "$base_url$first_page"  unless $first_page =~ /^https?:/;
 
+#  Set this to, e.g. 1401 in order to skip posts #1-1400 
+my $FIRST_POST_ID = 104;
+
+
 my @GMs;
 given ($first_page) {
 	when (/slivers-in-the-chaos-lands/) { @GMs = qw/@eaglejarl/ }
-	when {/marked-for-death/)           { @GMs = qw/@eaglejarl @Jackercracks
+	when (/marked-for-death/)           { @GMs = qw/@eaglejarl @Jackercracks
 													@AugSphere @Velorien/; }
 	default {}
 }
@@ -386,12 +390,14 @@ CounterBot
 
 =head1 SYNOPSIS
 
-Count up votes in a quest on SufficientVelocity.  Uses approval
+Counts up votes in a quest on SufficientVelocity.  Uses approval
 voting, so questers can vote for multiple plans.
 
 =head1 DESCRIPTION
 
-Reads through from the specified page to the last page in the thread, compiles a list of all votes, and then spits out a report at the end summarizing who voted for what.  A typical report might be:
+Reads through from the specified page (or post) to the last page in
+the thread, compiles a list of all votes, and then spits out a report
+at the end summarizing who voted for what.  A typical report might be:
 
     Mac CounterBot (@eaglejarl), version 0.9
 
@@ -437,3 +443,33 @@ Once in a while you'll see this:
 In this case the plan will be linked to post #2, since that was where
 CounterBot first saw the plan referenced.  
 
+=head1  TODO
+
+- Support voting by username.
+
+- Okay, looks like we need to deal with the item listed under Edge
+  Case where someone edits their post to vote for a later-proposed
+  plan so the link to the plan is wrong.
+
+- The various control variables should be moved into CLI options.
+
+- A config file should be established so that standard variables
+  (e.g. GM names) don't need to be entered each time.  Could replace
+  CLI options entirely, although it's still good to have those for
+  convenience.
+
+- Cache pages in a subfolder so that we don't need to retrieve them
+  every time.
+
+- Maybe add a 'stop at page X' switch?  There is one in SV's Tallybot,
+  although I'm not sure what it's for.  It would simplify debugging by
+  letting you reduce the number of pages to retrieve.  Otherwise it
+  seems like it would only be good for re-counting old votes.
+
+- Yell at SV for their wonky markup.
+
+- Yell at Apple for their never-sufficient-bedamned antique crypto
+  libraries that mean I have to use backticks instead of a proper LWP
+  call.
+
+=cut
