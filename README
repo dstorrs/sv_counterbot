@@ -1,0 +1,89 @@
+=head1 NAME
+
+CounterBot
+
+=head1 SYNOPSIS
+
+Counts up votes in a quest on SufficientVelocity.  Uses approval
+voting, so questers can vote for multiple plans.
+
+=head1 DESCRIPTION
+
+Reads through from the specified page (or post) to the last page in
+the thread, compiles a list of all votes, and then spits out a report
+at the end summarizing who voted for what.  A typical report might be:
+
+    Mac CounterBot (@eaglejarl), version 0.9
+
+
+    [B]Plan name: [URL=https://forums.sufficientvelocity.com/posts/5468116/]Arrival  [/url][/B]
+    Voters: @AZATHOTHoth, @Citrus, @FullNothingness, @godofbiscuit, @Jackercracks, @Kingspace, @Sigil, @tarrangar, @TempestK, @TheEyes, @Void Stalker
+    Num votes:  11
+    
+    [B]Plan name: [URL=https://forums.sufficientvelocity.com/posts/5469924/]Arrival + Wands[/url][/B]
+    Voters: @Angle, @DonLyn, @FullNothingness, @HyperCatnip, @Jackercracks, @Radvic, @rangerscience, @RedV, @Solace
+    Num votes:  9
+    
+    [B]Plan name: [URL=https://forums.sufficientvelocity.com/posts/5469924/]Arrival + Wands + Survivors[/url][/B]
+    Voters: @Angle, @Jack Stargazer, @Jackercracks, @rangerscience, @TheEyes
+    Num votes:  5
+    
+    ...etc...
+
+The various plans are linked back to where they were defined and
+everyone who voted is given an alert so that they know the results are
+up and can confirm their votes if they like.[1]
+
+Note that this is *approval voting*.  In the report above,
+@Jackercracks voted for three separate plans so he's listed on all
+those plans.  That's a feature, not a bug.
+
+
+=head1 USE ON OTHER SITES
+
+CounterBot will probably work on any other board written on the
+same codebase as SV -- SpaceBattles and Questionable Questing should
+be fine, although that hasn't been tested.
+
+
+=head1  EDGE CASES 
+
+Once in a while you'll see this:
+
+ - Al writes post #2
+ - Bob writes post #3 with the "[X] Do FOO" voting plan
+ - Al goes back and edits post #2 to contain a vote for "Do FOO".
+
+In this case the plan will be linked to post #2, since that was where
+CounterBot first saw the plan referenced.  
+
+=head1  TODO
+
+- Support voting by username.
+
+- Okay, looks like we need to deal with the item listed under Edge
+  Case where someone edits their post to vote for a later-proposed
+  plan so the link to the plan is wrong.
+
+- The various control variables should be moved into CLI options.
+
+- A config file should be established so that standard variables
+  (e.g. GM names) don't need to be entered each time.  Could replace
+  CLI options entirely, although it's still good to have those for
+  convenience.
+
+- Cache pages in a subfolder so that we don't need to retrieve them
+  every time.
+
+- Maybe add a 'stop at page X' switch?  There is one in SV's Tallybot,
+  although I'm not sure what it's for.  It would simplify debugging by
+  letting you reduce the number of pages to retrieve.  Otherwise it
+  seems like it would only be good for re-counting old votes.
+
+- Yell at SV for their wonky markup.
+
+- Yell at Apple for their never-sufficient-bedamned antique crypto
+  libraries that mean I have to use backticks instead of a proper LWP
+  call.
+
+=cut
