@@ -15,6 +15,8 @@ my $VERSION  = 0.9;
 ###-------  Setup
 
 my $PLAN_NAME_PREFIX = qr/^\s*\[[X-]\]\s*/i;
+my $BASE_URL = 'https://forums.sufficientvelocity.com/';
+
 
 Log::Log4perl->easy_init($ERROR);  # use $DEBUG or $ERROR
 
@@ -23,56 +25,45 @@ Log::Log4perl->easy_init($ERROR);  # use $DEBUG or $ERROR
 #
 
 
-###-------  Start
+#---------- Get all necessary command values 
 
-my ($first_post_id, $start_page, $GMs) = (); #get_cli_options();
+my ($first_post_id, $first_page, $GMs) = get_cli_options();
 
-my $base_url = 'https://forums.sufficientvelocity.com/';
+my $default_page = 'threads/marked-for-death-a-rational-naruto-quest.24481/page-228';
 
-my $default_page = 'threads/marked-for-death-a-rational-naruto-quest.24481/page-226';
+$first_page = "$BASE_URL$first_page"  unless $first_page =~ /^https?:/;
 
-my $first_page = shift || $default_page;
-$first_page = "$base_url$first_page"  unless $first_page =~ /^https?:/;
-
-#  Set this to, e.g. 1401 in order to skip posts #1-1400 
-$first_post_id = 5547;
-
-
-my @GMs;
+#    Set some defaults 
 given ($first_page) {
-	when (/slivers-in-the-chaos-lands/) { @GMs = qw/@eaglejarl/ }
-	when (/marked-for-death/)           { @GMs = qw/@eaglejarl @Jackercracks
-													@AugSphere @Velorien/; }
+	when (/slivers-in-the-chaos-lands/) { @$GMs = qw/@eaglejarl/ }
+	when (/marked-for-death/)           { @$GMs = qw/@eaglejarl @Jackercracks
+													 @AugSphere @Velorien/; }
 	default {}
 }
-my %EXCLUDE_USERS = map { $_ => 1 } @GMs;
+my %EXCLUDE_USERS = map { $_ => 1 } @$GMs;
 
-# %EXCLUDE_USERS = ();  # FOR DEBUGGING, IF YOU DON'T WANT TO SKIP GM POSTS
 
-#----------
-
+#----------  Make the tally (retrieve pages, tally plans, output report)
 
 my $root = make_root( $first_page );
 
 my @page_urls = get_page_urls_after( $root );
 
-my $output =
-	format_plans( 
-		tally_plans(
- 			map { make_plan($_) }
-				map {
+output_report(                              # Show the report 
+	format_plans(                           # Generate the text of the report
+		tally_plans(                        # Count the votes
+ 			map { make_plan($_) }           # Generate a voting plan for each post
+				map {                       # Retrieve posts from each page
 					$_->look_down(
 						_tag => 'li',
 						id => qr/post-\d+/
 					)
 				}
-					$root, map { make_root($_) } @page_urls
+					$root, map { make_root($_) } @page_urls # Retrieve all pages
 			)
-	);
+	)
+);
 
-say "Mac CounterBot (\@eaglejarl), version $VERSION\n";
-
-say $output;
 
 exit(0);
 
@@ -98,7 +89,7 @@ sub make_plan {
 	
 	my $link = $post->look_down(_tag => 'a', href => qr<posts/\d+/>)->attr('href');
 	unless ( $link =~ /^http/ ) {
-		$link = $base_url . $link;
+		$link = $BASE_URL . $link;  # @@TODO: don't use global
 	}
 	DEBUG "link is $link";
 	
@@ -387,20 +378,22 @@ sub text_of {
 	return $text;
 }
 
+###----------------------------------------------------------------------
+
 sub get_cli_options {
-	my ($first_post_id, $start_page, $GMs, $temp) = (0);
+	my ($first_post_id, $first_page, $GMs, $temp) = (0);
 	
-	GetOptions("start=s"        => \$start_page,         # numeric
-			   "first_post=i"   => \$first_post_id,      # string
-			   "gm=s@"          => \$temp
+	GetOptions("page|start|p|s=s"   => \$first_page,         # string
+			   "first_post|id=i"    => \$first_post_id,      # integer
+			   "gm=s@"              => \$temp
 		   )  or die("Error in command line arguments\n");
 	
 	#  Support both: '--gm bob --gm tom'  and '--gm bob,tom'
 	@$GMs = split(',', join(',', @{ $temp || []}));
 
-	check_usage( $start_page, $first_post_id, $GMs );
+	check_usage( $first_page, $first_post_id, $GMs );
 	
-	return ($first_post_id, $start_page, $GMs);
+	return ($first_post_id, $first_page, $GMs);
 }
 
 ###----------------------------------------------------------------------
@@ -412,6 +405,16 @@ sub check_usage {
 	die "First post ID cannot be negative"    unless $first_post_id >= 0;
 }
 
+###----------------------------------------------------------------------
+
+sub output_report {
+	my $report = shift;
+
+	say "Mac CounterBot (\@eaglejarl), version $VERSION\n";
+	say $report;
+}
+
+###----------------------------------------------------------------------
 ###----------------------------------------------------------------------
 
 
