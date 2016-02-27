@@ -6,31 +6,36 @@ use strict;
 use feature ':5.10';
 use HTML::TreeBuilder 5 -weak;
 use Data::Dumper;
-use GetOpt::Long;
+use Getopt::Long;
 use Log::Log4perl qw(:easy);
 use constant VERBOSE => 0;
 
 my $VERSION  = 0.9;
 
+###-------  Setup
+
+my $PLAN_NAME_PREFIX = qr/^\s*\[[X-]\]\s*/i;
+
+Log::Log4perl->easy_init($ERROR);  # use $DEBUG or $ERROR
 
 #
 #    Search '=head1' for docs
 #
 
-Log::Log4perl->easy_init($ERROR);  # Or $ERROR when not debugging
 
+###-------  Start
 
-#----------
+my ($first_post_id, $start_page, $GMs) = (); #get_cli_options();
+
 my $base_url = 'https://forums.sufficientvelocity.com/';
-my $PLAN_NAME_PREFIX = qr/^\s*\[[X-]\]\s*/i;
 
-my $default_page = 'threads/marked-for-death-a-rational-naruto-quest.24481/page-222';
+my $default_page = 'threads/marked-for-death-a-rational-naruto-quest.24481/page-226';
 
 my $first_page = shift || $default_page;
 $first_page = "$base_url$first_page"  unless $first_page =~ /^https?:/;
 
 #  Set this to, e.g. 1401 in order to skip posts #1-1400 
-my $FIRST_POST_ID = 5547;
+$first_post_id = 5547;
 
 
 my @GMs;
@@ -84,8 +89,8 @@ sub make_plan {
 	DEBUG  "author, id: '$author', '$id'";
 
 	return if $EXCLUDE_USERS{ $author };
-	if ( $id < $FIRST_POST_ID ) {
-		DEBUG "ID is $id, first is $FIRST_POST_ID.  Skipping.";
+	if ( $id < $first_post_id ) {
+		DEBUG "ID is $id, first is $first_post_id.  Skipping.";
 		return;
 	}
 	
@@ -381,6 +386,34 @@ sub text_of {
 	
 	return $text;
 }
+
+sub get_cli_options {
+	my ($first_post_id, $start_page, $GMs, $temp) = (0);
+	
+	GetOptions("start=s"        => \$start_page,         # numeric
+			   "first_post=i"   => \$first_post_id,      # string
+			   "gm=s@"          => \$temp
+		   )  or die("Error in command line arguments\n");
+	
+	#  Support both: '--gm bob --gm tom'  and '--gm bob,tom'
+	@$GMs = split(',', join(',', @{ $temp || []}));
+
+	check_usage( $start_page, $first_post_id, $GMs );
+	
+	return ($first_post_id, $start_page, $GMs);
+}
+
+###----------------------------------------------------------------------
+
+sub check_usage {
+	my ( $start_page, $first_post_id, $GMs ) = @_;
+
+	die "No start page specified. Use '--start <URL>'\n" unless $start_page;
+	die "First post ID cannot be negative"    unless $first_post_id >= 0;
+}
+
+###----------------------------------------------------------------------
+
 
 __END__
 
