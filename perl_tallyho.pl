@@ -24,13 +24,13 @@ Log::Log4perl->easy_init($ERROR);  # Or $ERROR when not debugging
 my $base_url = 'https://forums.sufficientvelocity.com/';
 my $PLAN_NAME_PREFIX = qr/^\s*\[[X-]\]\s*/i;
 
-my $default_page = 'threads/slivers-in-the-chaos-lands-mtg-multicross.26697/page-5';
+my $default_page = 'threads/marked-for-death-a-rational-naruto-quest.24481/page-222';
 
 my $first_page = shift || $default_page;
 $first_page = "$base_url$first_page"  unless $first_page =~ /^https?:/;
 
 #  Set this to, e.g. 1401 in order to skip posts #1-1400 
-my $FIRST_POST_ID = 104;
+my $FIRST_POST_ID = 5547;
 
 
 my @GMs;
