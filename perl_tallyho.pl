@@ -447,10 +447,6 @@ CounterBot first saw the plan referenced.
 
 - Support voting by username.
 
-- Okay, looks like we need to deal with the item listed under Edge
-  Case where someone edits their post to vote for a later-proposed
-  plan so the link to the plan is wrong.
-
 - The various control variables should be moved into CLI options.
 
 - A config file should be established so that standard variables
