@@ -8,15 +8,16 @@ use HTML::TreeBuilder 5 -weak;
 use Data::Dumper;
 use Getopt::Long;
 use Log::Log4perl qw(:easy);
+
 use constant VERBOSE => 0;
+use constant BASE_URL => 'https://forums.sufficientvelocity.com/';
+
 
 my $VERSION  = 0.9;
 
 ###-------  Setup
 
 my $PLAN_NAME_PREFIX = qr/^\s*\[[X-]\]\s*/i;
-my $BASE_URL = 'https://forums.sufficientvelocity.com/';
-
 
 Log::Log4perl->easy_init($ERROR);  # use $DEBUG or $ERROR
 
@@ -27,21 +28,27 @@ Log::Log4perl->easy_init($ERROR);  # use $DEBUG or $ERROR
 
 #---------- Get all necessary command values 
 
+#    Respectively:
+# - first post # that we should pay attention to
+# - URL of first page to retrieve
+# - list of GM names (users to be ignored)
+#
 my ($first_post_id, $first_page, $GMs) = get_cli_options();
 
-my $default_page = 'threads/marked-for-death-a-rational-naruto-quest.24481/page-228';
+$first_page = BASE_URL . $first_page  unless $first_page =~ /^https?:/;
 
-$first_page = "$BASE_URL$first_page"  unless $first_page =~ /^https?:/;
-
-#    Set some defaults 
-given ($first_page) {
-	when (/slivers-in-the-chaos-lands/) { @$GMs = qw/@eaglejarl/ }
-	when (/marked-for-death/)           { @$GMs = qw/@eaglejarl @Jackercracks
-													 @AugSphere @Velorien/; }
-	default {}
+#    Set some defaults
+if ( ! @$GMs ) {
+	given ($first_page) {
+		when (/slivers-in-the-chaos-lands/) { @$GMs = qw/eaglejarl/ }
+		when (/marked-for-death/)           { @$GMs = qw/eaglejarl Jackercracks
+														 AugSphere Velorien/; }
+		default {}
+	}
 }
-my %EXCLUDE_USERS = map { $_ => 1 } @$GMs;
 
+#    usernames should start with '@', but only one '@'
+my %EXCLUDE_USERS = map { /^@/ ? $_ : '@' . $_ => 1 } @$GMs;
 
 #----------  Make the tally (retrieve pages, tally plans, output report)
 
@@ -85,11 +92,12 @@ sub make_plan {
 		return;
 	}
 	
-	remove_quote_blocks($post);
-	
+	remove_quote_blocks($post);  # Ignore text that was quoted from an earlier post
+
+	#    Retrieve the link to the post
 	my $link = $post->look_down(_tag => 'a', href => qr<posts/\d+/>)->attr('href');
 	unless ( $link =~ /^http/ ) {
-		$link = $BASE_URL . $link;  # @@TODO: don't use global
+		$link = BASE_URL . $link;  
 	}
 	DEBUG "link is $link";
 	
