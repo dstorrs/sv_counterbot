@@ -75,10 +75,29 @@ is_deeply(
 
 isa_ok( mock_first_post(), 'HTML::Element', "mock_first_post() works" );
 
+{
+	
+	is( 
+		text_of( mock_first_post() ),
+		" frommermanLocation:US Additional benefit if hive spawning: An unknown chance that the plains infested with Orks shifts away. Could also happen to the forest near the elves, but I don't think (?) we Manabonded near their base.   frommerman, Feb 28, 2016 at 4:21 AM #301",
+		"text_of() correct on first post"
+	);
+	throws_ok { content_text() } qr/No post object \(HTML::Element derived\) specified in content_text\(\)/,
+		"context_text throws when no post given"; 
+	is(
+		content_text( mock_first_post() ),
+		"Additional benefit if hive spawning: An unknown chance that the plains infested with Orks shifts away. Could also happen to the forest near the elves, but I don't think (?) we Manabonded near their base.",
+		"content_text() correct on first post"
+	);
+	
+}
 
+		
+ 
 {
 	throws_ok { remove_quote_blocks() } qr/No post object \(HTML::Element based\) supplied in remove_quote_blocks\(\)/,
 		"remove_quote_blocks() dies on no arg";
+	
 }
 
 

@@ -25,6 +25,7 @@ BEGIN {
 						  make_plan
 						  init
 						  text_of
+						  content_text
 						  remove_quote_blocks
 						 /;
 	our %EXPORT_TAGS = (all => [ qw/get_page
@@ -35,6 +36,8 @@ BEGIN {
 									get_id
 									make_plan
 									init
+									text_of
+									content_text
 									remove_quote_blocks
 								   /
 							   ]
@@ -229,6 +232,32 @@ sub text_of {
 	return $text;
 }
 
+###----------------------------------------------------------------------
+
+sub content_text {
+	my $post = shift or die "No post object (HTML::Element derived) specified in content_text()"; 
+
+	my $text = text_of(
+		$post->look_down(
+			_tag => 'div',
+			class => 'messageContent'
+		)
+	);
+	
+	return clean_text( $text );
+}
+
+sub clean_text {
+	my $text = shift;
+	
+	$text =~ s/ //g;
+	$text =~ s/^\s*//;
+	$text =~ s/\s*$//;
+
+	return $text;
+}
+
+	
 ###----------------------------------------------------------------------
 
 sub get_posts {
