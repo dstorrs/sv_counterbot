@@ -184,7 +184,8 @@ sub make_plan {
 ###----------------------------------------------------------------------
 
 sub remove_quote_blocks {
-	my $post = shift || die "No post specified in remove_quote_blocks";
+	my $post = shift || die "No post object (HTML::Element based) supplied in remove_quote_blocks()";
+	
 	$_->delete for $post->look_down(
 		_tag => 'div',
 		class => qr/\bbbCodeQuote\b/,

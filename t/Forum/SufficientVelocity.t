@@ -7,7 +7,8 @@ use Test::Exception;
 use File::Slurp qw/slurp/;
 use File::Spec;
 use Cwd;
-use feature 'say';
+use feature ':5.10';
+
 
 use lib "../../";
 BEGIN { use_ok('Forum::SufficientVelocity', qw/:all/) }
@@ -72,10 +73,13 @@ is_deeply(
 	is( scalar @posts, 25, "Got correct number of HTML::Element's from get_posts" );
 }
 
+isa_ok( mock_first_post(), 'HTML::Element', "mock_first_post() works" );
 
-# {
-# #	throws_ok { remove_quote_blocks() } qr/No post object \(HTML::Element based\) supplied in remove_quote_blocks\(\)/, "get_id() dies on no arg";
-# }
+
+{
+	throws_ok { remove_quote_blocks() } qr/No post object \(HTML::Element based\) supplied in remove_quote_blocks\(\)/,
+		"remove_quote_blocks() dies on no arg";
+}
 
 
 # # TODO: {
@@ -117,10 +121,10 @@ sub mock_get_page {
 	return scalar slurp _make_path( $url );
 }
 	
-# ###----------------------------------------------------------------------
+###----------------------------------------------------------------------
 
-# sub first_post {
-# 	my $page = make_root($url);
-# #	my @li =  !@#
-# }
+sub mock_first_post {
+	state $first = @{[ get_posts( make_root( $url ) ) ]}[0];
+	return $first;
+}
 
