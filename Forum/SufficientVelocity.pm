@@ -27,6 +27,7 @@ BEGIN {
 						  text_of
 						  content_text
 						  remove_quote_blocks
+						  get_votes
 						 /;
 	our %EXPORT_TAGS = (all => [ qw/get_page
 									make_root
@@ -39,6 +40,7 @@ BEGIN {
 									text_of
 									content_text
 									remove_quote_blocks
+									get_votes
 								   /
 							   ]
 					);
@@ -168,12 +170,7 @@ sub make_plan {
 		author => $author,
 		link   => $link,
 		id     => $id,
-		text   => text_of(
-			$post->look_down(
-				_tag => 'div',
-				class => 'messageContent'
-			)
-		),
+		text   => content_text( $post ),
 	};
 	
 	#    Add the votes after creating the post so that we only have to
@@ -247,6 +244,8 @@ sub content_text {
 	return clean_text( $text );
 }
 
+###----------------------------------------------------------------------
+
 sub clean_text {
 	my $text = shift;
 	
@@ -257,7 +256,6 @@ sub clean_text {
 	return $text;
 }
 
-	
 ###----------------------------------------------------------------------
 
 sub get_posts {
@@ -268,6 +266,25 @@ sub get_posts {
 	);
 }
 
+###----------------------------------------------------------------------
+
+sub get_votes {
+	my $plan = shift || die "No post specified in get_votes";
+	my $text = $plan->{text};
+
+	#    Votes can now have either '[X]' or '[-]' and '[x]' will be forcibly
+	#    uppercased.  '[-]' means 'remove me from this plan'
+	#
+
+	DEBUG "in get_votes, text is: $text";
+	my $result = [ map { s/\[x\]/\[X\]/; $_ }
+					   grep { /(${PLAN_NAME_PREFIX}.+)/ }
+						   split /\n/, $text
+				   ];
+	DEBUG "in get_votes, result is: ", Dumper $result;
+	
+	return $result;
+}
 
 1;
 
