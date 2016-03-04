@@ -12,6 +12,9 @@ use HTML::TreeBuilder 5 -weak;
 use constant VERBOSE => 0;
 use constant BASE_URL => 'https://forums.sufficientvelocity.com/';
 
+Log::Log4perl->easy_init($ERROR);  # use $DEBUG or $ERROR
+
+
 our (@ISA, @EXPORT_OK);
 BEGIN {
 	require Exporter;
@@ -28,6 +31,9 @@ BEGIN {
 						  content_text
 						  remove_quote_blocks
 						  get_votes
+						  tally_plans
+						  canonize_plan_name
+						  vote_type
 						 /;
 	our %EXPORT_TAGS = (all => [ qw/get_page
 									make_root
@@ -41,6 +47,9 @@ BEGIN {
 									content_text
 									remove_quote_blocks
 									get_votes
+									tally_plans
+									canonize_plan_name
+									vote_type
 								   /
 							   ]
 					);
@@ -75,14 +84,28 @@ my $PLAN_NAME_PREFIX = qr/^\s*\[[X-]\]\s*/i;
 		
 		my %args = @_;
 
+		#    Options:
+		# url            => 'http...',
+		# first_post_id  => 2,
+		# exclude_users  => [ qw/bob tom sue/ ], #  Will be converted to qw/@bob @tom @sue/ if it isn't already
+
+		
 		die "Must specify a first page URL using: url => 'http...'" unless $args{url} && $args{url} =~ /^\s*http/;
 		$args{url} =~ s/^\s*//;
 		$args{url} =~ s/\s*$//;
 		
 		$args{first_post_id} ||= 0;
 		
-		$args{ exclude_users } ||= {};
+		$args{ exclude_users } ||= [];
 
+		#    usernames should start with '@', but only one '@'.  Turn
+		#    the array ref into a hash ref for easy reference
+		#
+		my @names = @{ $args{ exclude_users } };
+		$args{ exclude_users } = {
+			{ map { /^@/ ? $_ : '@' . $_ => 1 } @names },
+		};
+		
 		$data = \%args;
 	}
 }
@@ -284,6 +307,92 @@ sub get_votes {
 	DEBUG "in get_votes, result is: ", Dumper $result;
 	
 	return $result;
+}
+
+###----------------------------------------------------------------------
+
+sub canonize_plan_name {
+	my $name = shift;
+
+	DEBUG "before, name is $name";
+
+	$name =~ s/${PLAN_NAME_PREFIX}(?:\s*Plan\b\s*:?)?\s*//i;
+
+	DEBUG "after, name is $name";
+
+	return $name;
+}
+
+###----------------------------------------------------------------------
+
+sub vote_type {
+	my $vote = uc shift;
+
+	DEBUG "in vote_type: vote is '$vote'";
+	
+	my ($type) = ($vote =~ /\[([X-])\]/i);
+
+	DEBUG "vote type is: $type";
+	
+	return $type; #  Returns either 'X' or '-' for add to / remove from vote
+}
+
+###----------------------------------------------------------------------
+
+sub tally_plans {
+	my @posts = @_;
+
+	my $plan_votes = {};
+
+	for my $post ( @posts ) {
+		#    For each post, check to see if it has any votes.  If so, add
+		#    this user's name to the list of voters.  If this is the first
+		#    time we've see this plan, also add the name and the link
+
+		my $votes = $post->{votes} || [];
+		next unless @$votes;
+
+		for my $v (@$votes) {
+			#    People often slightly mistype the name of a plan --
+			#    wrong caps, extra whitespace, whatever.  Try to
+			#    prevent that.  Also, sometimes they do '[X] Plan foo'
+			#    and sometimes they just do '[x] foo' so deal with
+			#    that as well.
+			#			
+			my $key = lc canonize_plan_name($v);
+			$key =~ s/\W//g;
+
+			DEBUG "Vote is: '$v'. Key is: '$key'";
+			my $author = author_ref( $post->{author} );
+
+			my ($type, $name) = (vote_type($v), canonize_plan_name($v));
+			#			say "type is '$type'";
+			
+			if ( $type eq "-" ) { # Voting to be removed from that plan
+				say "deleting for plan $key, author $author";
+				delete $plan_votes->{$key}{voters}{$author};
+				if ( 0 == keys %{$plan_votes->{$key}{voters}} ) {
+					delete $plan_votes->{$key};
+				}
+				next;
+			}
+			elsif ( ! exists $plan_votes->{$key} ) {
+				$plan_votes->{$key} = {
+					name   => $name,
+					key    => $key,
+					id     => $post->{id},
+					author => $author,
+					link   => $post->{link},
+					voters => {},
+				};
+			}
+			$plan_votes->{$key}{voters}{ $author }++;
+		}		
+	}
+
+	#DEBUG Dumper "plan votes: ", $plan_votes;
+	
+	return $plan_votes;
 }
 
 1;

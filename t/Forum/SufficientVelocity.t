@@ -102,7 +102,7 @@ isa_ok( mock_post(0), 'HTML::Element', "mock_post(0) works" );
 }
 
 
-TODO: {
+{	
 	my @li = make_root($url)->look_down(
 		_tag => 'li',
 		id => qr/post-\d+/
@@ -137,6 +137,99 @@ TODO: {
 	);	
 }
 
+{
+	is( canonize_plan_name(), "", "canonize_plan_name()" );
+	is( canonize_plan_name("foo"), "foo", "canonize_plan_name(foo)" );
+	is( canonize_plan_name("Foo"), "Foo", "canonize_plan_name(Foo)" );
+	is( canonize_plan_name("Planetary"), "Planetary", "canonize_plan_name(Planetary)" );
+
+
+	subtest 'Various combinations of whitespace, vote type, and prefix' => sub {
+		my $add_ws_around = sub { map { (" $_", $_, "$_ ", " $_ ") } @_	};
+		for my $type ( $add_ws_around->('[x]', '[X]', '[-]') ) {
+			for my $prefix ( $add_ws_around->('Plan ', 'Plan:') ) {
+				is( canonize_plan_name("$type${prefix}Foobar"), "Foobar", "$type${prefix}Foobar" );
+			}
+		}
+	};
+}
+
+{
+	is( vote_type("[x] foo"), 'X', "Got right vote type for 'x'" );
+	is( vote_type("[X] foo"), 'X', "Got right vote type for 'X'" );
+	is( vote_type("[-] foo"), '-', "Got right vote type for '-'" );
+}
+
+{
+	my @posts = get_posts( make_root( $url ) );
+	
+	is_deeply( tally_plans(), {}, "no posts => empty {}" );
+	is_deeply( tally_plans( map { make_plan($_) } @posts[0,14]),
+			   {
+				   'bracingforwaaaaugh' => {
+					   'link' => 'https://forums.sufficientvelocity.com/posts/5509401/',
+					   'name' => 'Bracing for Waaaaugh',
+					   'author' => '@frommerman',
+					   'id' => 315,
+					   'voters' => {
+						   '@frommerman' => 1
+					   },
+					   'key' => 'bracingforwaaaaugh'
+				   },
+			   },
+			   "got one-plan tally correctly"
+		   );
+	is_deeply( tally_plans( map { make_plan($_) } @posts),
+			   {
+				   'bracingforwaaaaugh' => {
+					   'link' => 'https://forums.sufficientvelocity.com/posts/5509401/',
+					   'name' => 'Bracing for Waaaaugh',
+					   'author' => '@frommerman',
+					   'id' => 315,
+					   'voters' => {
+						   '@rafaelhr' => 1,
+						   '@Radvic' => 1,
+						   '@Angle' => 1,
+						   '@frommerman' => 1
+					   },
+					   'key' => 'bracingforwaaaaugh'
+				   },
+				   'diggingforslivers' => {
+					   'link' => 'https://forums.sufficientvelocity.com/posts/5510730/',
+					   'name' => 'Digging for Slivers',
+					   'author' => '@Radvic',
+					   'id' => 324,
+					   'voters' => {
+						   '@Radvic' => 1,
+						   '@Angle' => 1
+					   },
+					   'key' => 'diggingforslivers'
+				   },
+				   'fortifytomultiply' => {
+					   'link' => 'https://forums.sufficientvelocity.com/posts/5509539/',
+					   'name' => 'Fortify to Multiply',
+					   'author' => '@_brightwing',
+					   'id' => 316,
+					   'voters' => {
+						   '@_brightwing' => 1
+					   },
+					   'key' => 'fortifytomultiply'
+				   },
+				   'enterrtsmode' => {
+					   'link' => 'https://forums.sufficientvelocity.com/posts/5509740/',
+					   'name' => 'Enter RTS Mode',
+					   'author' => '@Jack Stargazer',
+					   'id' => 319,
+					   'voters' => {
+						   '@_brightwing' => 1,
+						   '@Jack Stargazer' => 1
+					   },
+					   'key' => 'enterrtsmode'
+				   }
+			   },
+			   "all posts tallied correctly"
+		   );
+}
 
 done_testing();
 exit;
