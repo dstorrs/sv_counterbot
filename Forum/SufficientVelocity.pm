@@ -14,12 +14,17 @@ use constant BASE_URL => 'https://forums.sufficientvelocity.com/';
 
 Log::Log4perl->easy_init($ERROR);  # use $DEBUG or $ERROR
 
+our $VERSION = 1.0;
 
-our (@ISA, @EXPORT_OK);
+our (@ISA, @EXPORT_OK, @EXPORT);
 BEGIN {
 	require Exporter;
 	@ISA = qw(Exporter);
-	our @EXPORT_OK   = qw/get_page
+	
+	our @EXPORT   = qw/init generate_report/;
+	
+	our @EXPORT_OK   = qw/generate_report
+						  get_page
 						  make_root
 						  get_page_urls_after
 						  get_posts
@@ -35,7 +40,8 @@ BEGIN {
 						  canonize_plan_name
 						  vote_type
 						 /;
-	our %EXPORT_TAGS = (all => [ qw/get_page
+	our %EXPORT_TAGS = (all => [ qw/generate_report
+									get_page
 									make_root
 									get_posts
 									get_page_urls_after
@@ -72,7 +78,7 @@ my $PLAN_NAME_PREFIX = qr/^\s*\[[X-]\]\s*/i;
 	
 	sub first_post_id { _get_data('first_post_id') }
 	sub exclude_users { _get_data('exclude_users') }
-	sub url           { _get_data('url')           }
+	sub first_url     { _get_data('first_url')           }
 	
 	sub init {
 		#    I could make this into an OO constructor, but OO is overkill
@@ -85,14 +91,17 @@ my $PLAN_NAME_PREFIX = qr/^\s*\[[X-]\]\s*/i;
 		my %args = @_;
 
 		#    Options:
-		# url            => 'http...',
+		# first_url      => 'http...',
 		# first_post_id  => 2,
 		# exclude_users  => [ qw/bob tom sue/ ], #  Will be converted to qw/@bob @tom @sue/ if it isn't already
 
+
+		unless ( $args{first_url} && $args{first_url} =~ /^\s*http/ ) {
+			die "Must specify a first page URL using: first_url => 'http...'"
+		}
 		
-		die "Must specify a first page URL using: url => 'http...'" unless $args{url} && $args{url} =~ /^\s*http/;
-		$args{url} =~ s/^\s*//;
-		$args{url} =~ s/\s*$//;
+		$args{first_url} =~ s/^\s*//;
+		$args{first_url} =~ s/\s*$//;
 		
 		$args{first_post_id} ||= 0;
 		
@@ -103,11 +112,31 @@ my $PLAN_NAME_PREFIX = qr/^\s*\[[X-]\]\s*/i;
 		#
 		my @names = @{ $args{ exclude_users } };
 		$args{ exclude_users } = {
-			{ map { /^@/ ? $_ : '@' . $_ => 1 } @names },
+			map { $_ => 1 }
+				map { /^@/ ? $_ : '@' . $_ }
+					@names
 		};
 		
 		$data = \%args;
 	}
+}
+
+###----------------------------------------------------------------------
+
+sub generate_report {
+
+	my $root = make_root( first_url() );
+	output_report(                              # Show the report 
+		format_plans(                           # Generate the text of the report
+			tally_plans(                        # Count the votes
+				map { make_plan($_) }           # Generate a voting plan for each post
+					map { get_posts($_) }
+						$root, map { make_root($_) }
+							get_page_urls_after( $root )
+								
+						)
+		)
+	);
 }
 
 ###----------------------------------------------------------------------
@@ -199,8 +228,7 @@ sub make_plan {
 	#    Add the votes after creating the post so that we only have to
 	#    do text_of once.
 	$plan->{votes} = get_votes( $plan );
-	#	delete $plan->{post}; say Dumper $plan; $plan->{post} = $post; #  FOR DEBUGGING
-
+	
 	return $plan;
 }
 
@@ -314,6 +342,11 @@ sub get_votes {
 sub canonize_plan_name {
 	my $name = shift;
 
+	unless ( defined $name ) {
+		warn "No name specified in canonize_plan_name" ;
+		$name = '';
+	}
+	
 	DEBUG "before, name is $name";
 
 	$name =~ s/${PLAN_NAME_PREFIX}(?:\s*Plan\b\s*:?)?\s*//i;
@@ -366,7 +399,7 @@ sub tally_plans {
 			my $author = author_ref( $post->{author} );
 
 			my ($type, $name) = (vote_type($v), canonize_plan_name($v));
-			#			say "type is '$type'";
+			DEBUG "type is '$type'";
 			
 			if ( $type eq "-" ) { # Voting to be removed from that plan
 				say "deleting for plan $key, author $author";
@@ -394,6 +427,79 @@ sub tally_plans {
 	
 	return $plan_votes;
 }
+
+###----------------------------------------------------------------------
+
+sub get_page {
+	my $page_url = shift or	die "no page url specified in get_page()";
+
+	say STDERR "getting page for $page_url";
+	
+	#    OSX 10.11 (El Capitan) ships with out-of-date SSL modules,
+	#    meaning that wget, Perl, python, and a few other things can't
+	#    talk to https websites.  For whatever reason, curl
+	#    works--maybe libssl and libcrypto were statically linked?
+	#    Anyway, I'm reduced to this hack.
+	#
+	`curl $page_url 2>/dev/null`;
+}
+
+###----------------------------------------------------------------------
+
+sub format_plans {
+	my $plans = shift;
+
+	DEBUG "Entering format_plans...";
+	my $format_plan = sub {
+		my $p = shift;
+
+		my ($name, $voters, $link) = map { $p->{$_} } qw/name voters link/;
+		my $num_voters = keys %$voters;
+
+		$name = canonize_plan_name($name);
+		$voters = join(', ', sort { lc $a cmp lc $b } keys %$voters);
+		DEBUG "Plan name is: '$name'";
+		
+		my $x = qq{
+[B]Plan name: [URL=${link}]${name}[\/url][\/B]
+Voters: ${voters}
+Num votes:  ${num_voters}
+};
+	};
+
+	my $result = "Mac CounterBot by \@eaglejarl, version $VERSION\n\n";
+	$result .= join('',
+		 map { $format_plan->($_) }
+			 #
+			 #    Schwartzian transform in order to sort the plans by
+			 #    number of voters and, within that, by plan name
+			 #
+			 map { $_->[1] } 
+				 sort {
+					 $b->[0] <=> $a->[0]                      # Number of voters
+						 || $a->[1]{name} cmp $b->[1]{name}   # Plan name
+					 }
+					 map { [ scalar keys %{$_->{voters}}, $_ ] }
+						 values %$plans
+			 );
+
+	DEBUG "Leaving format_plans.";
+	return $result;
+}
+
+###----------------------------------------------------------------------
+
+sub output_report {
+	#    This is really just here for future-proofing and to provide
+	#    an easy hook for overriding -- if you want it to go somewhere
+	#    else, just have your script do
+	#    *Forum::SufficientVelocity::output_report = sub { ... }
+
+	say shift();
+}
+
+###----------------------------------------------------------------------
+
 
 1;
 

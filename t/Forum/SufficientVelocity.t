@@ -11,12 +11,15 @@ use feature ':5.10';
 
 
 use lib "../../";
-BEGIN { use_ok('Forum::SufficientVelocity', qw/:all/) }
+BEGIN {
+	use_ok('Forum::SufficientVelocity', qw/:all/)
+}
 
 
 #    Mock the network-contacting elements of F::SV
 no warnings;
-local *Forum::SufficientVelocity::get_page = \&mock_get_page;
+*Forum::SufficientVelocity::get_page = \&mock_get_page;
+Forum::SufficientVelocity->import( 'get_page' );
 use warnings;
 
 my $url = 'https://forums.sufficientvelocity.com/threads/slivers-in-the-chaos-lands-mtg-multicross.26697/page-13';
@@ -25,9 +28,9 @@ my $url = 'https://forums.sufficientvelocity.com/threads/slivers-in-the-chaos-la
 
 throws_ok { init() } qr/Must specify a first page URL/, "Dies unless given first page URL";
 
-is_deeply( init(url => $url),
+is_deeply( init(first_url => $url),
 		   {
-			   url           => $url,
+			   first_url     => $url,
 			   first_post_id => 0,
 			   exclude_users => {},
 		   },
@@ -36,8 +39,7 @@ is_deeply( init(url => $url),
 
 
 {
- 	my $text = slurp _make_path( $url );
- 	is( get_page($url), $text, "correctly got page 13" );
+ 	is(get_page($url), slurp _make_path( $url ), "correctly got page 13" );
 };
 
 isa_ok( make_root($url), 'HTML::TreeBuilder', 'make_root($url)' );
@@ -245,7 +247,7 @@ sub _make_path {
 	$url =~ s{/}{-}g;
 
 	my (undef, $dirs, $file) = File::Spec->splitpath( File::Spec->rel2abs( __FILE__ ) );
-	return File::Spec->catfile( $dirs, 'data', 'slivers-in-the-chaos-lands-mtg-multicross.26697-page-13' );
+	return File::Spec->catfile( $dirs, 'data', 'slivers-in-the-chaos-lands-mtg-multicross.26697-page-13.html' );
 }
 
 # ###----------------------------------------------------------------------
