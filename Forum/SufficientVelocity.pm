@@ -467,7 +467,7 @@ Num votes:  ${num_voters}
 };
 	};
 
-	my $result = "Mac CounterBot by \@eaglejarl, version $VERSION\n\n";
+	my $result = "\[b\]Mac CounterBot by \@eaglejarl, version $VERSION\[\/b\]\n\n";
 	$result .= join('',
 		 map { $format_plan->($_) }
 			 #
