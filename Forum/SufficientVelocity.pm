@@ -260,13 +260,20 @@ sub text_of {
 	VERBOSE && DEBUG "### BEFORE modding, Text is: '$text'";
 	
 	#    SV has an annoying habit of putting \n and whitespace in
-	#    front of every open tag and behind ever close tag.  So, after
-	#    you remove the tags something that SHOULD be this:
-	#        [X] Plan do all the things
-	#    is actually this:
-	#        [X] Plan 
-	#           do all the
-	#        things
+	#    front of every open tag and behind ever close tag.  So, if
+	#    you start with this:
+	#
+	#        [X] Plan do [i]all[/i] the things
+	#
+	#    after you remove the tags you SHOULD get this:
+	#
+	#        [X] Plan do all the things is actually this:
+	#
+	#    but actually you get this:
+	#
+	#        [X] Plan do
+	#         all
+	#        the things
 	#
 	my @chunks =
 			map { s/\n//smg; $_ }
