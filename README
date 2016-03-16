@@ -7,6 +7,22 @@ CounterBot
 Counts up votes in a quest on SufficientVelocity.  Uses approval
 voting, so questers can vote for multiple plans.
 
+=head1 SYNOPSIS
+
+    $ ./perl_tallyho.pl --page http://forums.sufficientvelocity.../page-2  [--id 111] [--stop 212] [--gm bob,kim]
+
+This says "start with this URL and roll forward to the end of the
+thread.  Ignore anything before post #111 and stop when you get to post
+#212.  The GMs are users 'bob' and 'kim', so ignore their posts."
+
+Anything in [quote] tags will be ignored.  Anything by someone listed
+as a GM will be ignored.
+
+NOTE: SV does not use, and will not respond to, URLs ending in
+'page-1'.  If you get an empty report back, the first thing to do is
+verify that the URL you used actually works.
+
+
 =head1 DESCRIPTION
 
 Reads through from the specified page (or post) to the last page in
@@ -57,15 +73,12 @@ Once in a while you'll see this:
 In this case the plan will be linked to post #2, since that was where
 CounterBot first saw the plan referenced.  
 
+There's not much to do about this without adding restrictions to the
+voting.  Just ask the players not to do that.
+
 =head1  TODO
 
 - Support voting by username.
-
-- Okay, looks like we need to deal with the item listed under Edge
-  Case where someone edits their post to vote for a later-proposed
-  plan so the link to the plan is wrong.
-
-- The various control variables should be moved into CLI options.
 
 - A config file should be established so that standard variables
   (e.g. GM names) don't need to be entered each time.  Could replace
@@ -74,16 +87,5 @@ CounterBot first saw the plan referenced.
 
 - Cache pages in a subfolder so that we don't need to retrieve them
   every time.
-
-- Maybe add a 'stop at page X' switch?  There is one in SV's Tallybot,
-  although I'm not sure what it's for.  It would simplify debugging by
-  letting you reduce the number of pages to retrieve.  Otherwise it
-  seems like it would only be good for re-counting old votes.
-
-- Yell at SV for their wonky markup.
-
-- Yell at Apple for their never-sufficient-bedamned antique crypto
-  libraries that mean I have to use backticks instead of a proper LWP
-  call.
 
 =cut
