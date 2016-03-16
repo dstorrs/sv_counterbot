@@ -12,7 +12,7 @@ use HTML::TreeBuilder 5 -weak;
 use constant VERBOSE => 0;
 use constant BASE_URL => 'https://forums.sufficientvelocity.com/';
 
-our $VERSION = 1.0;
+our $VERSION = 1.1;
 our $POSTS_PER_PAGE = 25; # Deliberately made a package variable 
 
 Log::Log4perl->easy_init($ERROR);  # use $DEBUG or $ERROR
@@ -166,12 +166,19 @@ sub get_page_urls_after {
 			map {  $nav->attr($_) }
 				qw/data-baseurl data-sentinel data-last data-page/;
 
+	if ( stop_id() ) {
+		#    If the caller wants us to stop at a specific post, figure
+		#    out what page that will be on
+		$last_page = int 1 + stop_id() / $POSTS_PER_PAGE;
+	}
+	
 	$base_url =~ s/$sentinel//;
 	$base_url = 'https://forums.sufficientvelocity.com/' . $base_url;
 	$current_page++;  #  We already have the current one, so skip it
 
 	return () if $current_page > $last_page;
 	my @urls = map { $base_url . $_ }  ( $current_page .. $last_page );
+
 	return @urls;
 }
 
@@ -189,7 +196,12 @@ sub author_ref {
 sub get_id {
 	my $p = shift ||  die "No post object (HTML::Element based) supplied in get_id()";
 	
-	my $text = $p->look_down(_tag => 'div', class => 'publicControls')->look_down(_tag => '~text')->attr('text');
+	my $text = '';
+	eval {
+		#    If we get a 
+		$text = $p->look_down(_tag => 'div', class => 'publicControls')->look_down(_tag => '~text')->attr('text');
+	};
+	if ( $@ ) { $text = '' }  # Not worth using Try::Tiny for this
 	
 	my ($id) =  $text =~ /(\d+)/;  #  Cut off the leading '#'
 	return $id;
@@ -313,11 +325,27 @@ sub clean_text {
 ###----------------------------------------------------------------------
 
 sub get_posts {
-	my $page = shift or die "No page object (HTML::Element derived) specified in get_posts"; 
-	$page->look_down(
-		_tag => 'li',
-		id => qr/post-\d+/
-	);
+	my $page = shift or die "No page object (HTML::Element derived) specified in get_posts";
+
+	my $stop_id = stop_id();
+
+	my $filter = sub {
+		my $p = shift;
+		DEBUG "Stop id, post id: $stop_id, ", get_id($p);
+		return $p unless $stop_id;
+		return if get_id($p) > $stop_id;
+		return $p;
+	};
+	
+
+	my @posts = 
+		grep { defined $filter->($_) }
+			$page->look_down(
+				_tag => 'li',
+				id => qr/post-\d+/
+			);
+
+	return @posts;
 }
 
 ###----------------------------------------------------------------------
@@ -405,7 +433,7 @@ sub tally_plans {
 			DEBUG "type is '$type'";
 			
 			if ( $type eq "-" ) { # Voting to be removed from that plan
-				say STDERR "deleting for plan $key, author $author";
+				say STDERR "deleting cancelled vote for plan $key by voter $author";
 				delete $plan_votes->{$key}{voters}{$author};
 				if ( 0 == keys %{$plan_votes->{$key}{voters}} ) {
 					delete $plan_votes->{$key};
@@ -487,7 +515,7 @@ Num votes:  ${num_voters}
 					 $b->[0] <=> $a->[0]                      # Number of voters
 						 || $a->[1]{name} cmp $b->[1]{name}   # Plan name
 					 }
-					 map { [ scalar keys %{$_->{votes}}, $_ ] }
+					 map { [ scalar keys %{$_->{voters}}, $_ ] }
 						 values %$plans
 			 );
 	DEBUG "all voters: ", Dumper $all_voters;
