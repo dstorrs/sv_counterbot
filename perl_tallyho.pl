@@ -1,5 +1,8 @@
 #!/usr/bin/env perl 
 
+#perl2exe_include "HTML::TreeBuilder";
+#perl2exe_include "Forum::SufficientVelocity";
+#perl2exe_include "Data::Dumper";
 
 use warnings;
 use strict;
@@ -7,6 +10,7 @@ use feature ':5.10';
 use HTML::TreeBuilder 5 -weak;
 use Data::Dumper;
 use Getopt::Long;
+use lib '.';
 
 use Forum::SufficientVelocity;
 
@@ -14,11 +18,9 @@ use constant BASE_URL => 'https://forums.sufficientvelocity.com/';
 
 #    Search '=head1' for docs
 
-my $VERSION  = 1.0;
-
 #---------- Get all necessary command values 
 
-my ($first_post_id, $first_url, $GMs) = get_cli_options();
+my ($first_post_id, $first_url, $GMs, $stop) = get_cli_options();
 
 #    Set some defaults
 if ( ! @$GMs ) {
@@ -29,6 +31,7 @@ if ( ! @$GMs ) {
 		default {}
 	}
 }
+$stop ||= 0;
 
 $first_url = BASE_URL . $first_url  unless $first_url =~ /^https?:/;
 
@@ -36,6 +39,7 @@ init (
 	first_url       => $first_url,
 	first_post_id   => $first_post_id,
 	exclude_users   => $GMs,
+	stop_id         => $stop,
 );
 
 generate_report();
@@ -47,25 +51,26 @@ exit(0);
 ###----------------------------------------------------------------------
 
 sub get_cli_options {
-	my ($first_post_id, $first_url, $GMs, $temp) = (0);
+	my ($first_post_id, $first_url, $GMs, $temp, $stop) = (0);
 	
 	GetOptions("page|start|p|s=s"   => \$first_url,         # string
 			   "first_post|id=i"    => \$first_post_id,      # integer
-			   "gm=s@"              => \$temp
+			   "gm=s@"              => \$temp,
+			   "stop=i"             => \$stop,
 		   )  or die("Error in command line arguments\n");
 	
 	#  Support both: '--gm bob --gm tom'  and '--gm bob,tom'
 	@$GMs = split(',', join(',', @{ $temp || []}));
 
-	check_usage( $first_url, $first_post_id, $GMs );
+	check_usage( $first_url, $first_post_id, $GMs, $stop );
 	
-	return ($first_post_id, $first_url, $GMs);
+	return ($first_post_id, $first_url, $GMs, $stop);
 }
 
 ###----------------------------------------------------------------------
 
 sub check_usage {
-	my ( $start_page, $first_post_id, $GMs ) = @_;
+	my ( $start_page, $first_post_id, $GMs, $stop ) = @_;
 
 	die "No start page specified. Use '--start <URL>'\n" unless $start_page;
 	die "First post ID cannot be negative"    unless $first_post_id >= 0;
