@@ -1,0 +1,20 @@
+#!/bin/bash
+
+#
+#    This is a very quick and dirty installer created just to give
+#    something to work with.  It does no error checking.  
+#
+#    For now the 'perl_tallyho.pl' script assumes that current directory is its directory and that you have '.' in your PERL5LIB
+
+echo "START";
+
+echo "NOTE: You should be using a perl >= 5.10";
+perl -v;
+
+echo "NOTE: You should have '.' as the last entry in the following list:";
+perl -e 'print "$_\n" for @INC';
+
+echo "NOTE: Installing these modules: HTML::TreeBuilder  Data::Dumper Getopt::Long  HTML::Element Log::Log4perl";
+cpan install  HTML::TreeBuilder  Data::Dumper Getopt::Long  HTML::Element Log::Log4perl;
+
+echo "Go back to where it says START and look at each of the 'NOTE' entries"; 	
