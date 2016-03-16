@@ -14,7 +14,7 @@ use constant BASE_URL => 'https://forums.sufficientvelocity.com/';
 
 #    Search '=head1' for docs
 
-my $VERSION  = 1.0;
+my $VERSION  = 1.1;
 
 #---------- Get all necessary command values 
 

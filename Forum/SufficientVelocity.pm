@@ -12,9 +12,10 @@ use HTML::TreeBuilder 5 -weak;
 use constant VERBOSE => 0;
 use constant BASE_URL => 'https://forums.sufficientvelocity.com/';
 
-Log::Log4perl->easy_init($ERROR);  # use $DEBUG or $ERROR
-
 our $VERSION = 1.0;
+our $POSTS_PER_PAGE = 25; # Deliberately made a package variable 
+
+Log::Log4perl->easy_init($ERROR);  # use $DEBUG or $ERROR
 
 our (@ISA, @EXPORT_OK, @EXPORT);
 BEGIN {
@@ -78,7 +79,8 @@ my $PLAN_NAME_PREFIX = qr/^\s*\[[X-]\]\s*/i;
 	
 	sub first_post_id { _get_data('first_post_id') }
 	sub exclude_users { _get_data('exclude_users') }
-	sub first_url     { _get_data('first_url')           }
+	sub first_url     { _get_data('first_url')     }
+	sub stop_id       { _get_data('stop_id')       }
 	
 	sub init {
 		#    I could make this into an OO constructor, but OO is overkill
@@ -153,14 +155,15 @@ sub make_root {
 sub get_page_urls_after {
 	my $root = shift || die "No page node specified in get_page_urls()";
 
-	my $navlinks = $root->look_down(
+	my $nav = $root->look_down(
 		_tag => 'div',
 		class => 'PageNav'
 	);
-
+	return () unless $nav;
+		
 	my ($base_url, $sentinel, $last_page, $current_page) = 
 		map { chomp; $_ }
-			map { $navlinks->attr($_) }
+			map {  $nav->attr($_) }
 				qw/data-baseurl data-sentinel data-last data-page/;
 
 	$base_url =~ s/$sentinel//;
@@ -402,7 +405,7 @@ sub tally_plans {
 			DEBUG "type is '$type'";
 			
 			if ( $type eq "-" ) { # Voting to be removed from that plan
-				say "deleting for plan $key, author $author";
+				say STDERR "deleting for plan $key, author $author";
 				delete $plan_votes->{$key}{voters}{$author};
 				if ( 0 == keys %{$plan_votes->{$key}{voters}} ) {
 					delete $plan_votes->{$key};
@@ -449,17 +452,22 @@ sub get_page {
 sub format_plans {
 	my $plans = shift;
 
+	my $all_voters = {};
 	DEBUG "Entering format_plans...";
 	my $format_plan = sub {
 		my $p = shift;
 
 		my ($name, $voters, $link) = map { $p->{$_} } qw/name voters link/;
 		my $num_voters = keys %$voters;
-
+		
+		DEBUG "Voters is: ", Dumper $voters;
+		
+		$all_voters->{$_}++ for keys %$voters; # Dedupe names for later use
+		
 		$name = canonize_plan_name($name);
 		$voters = join(', ', sort { lc $a cmp lc $b } keys %$voters);
 		DEBUG "Plan name is: '$name'";
-		
+
 		my $x = qq{
 [B]Plan name: [URL=${link}]${name}[\/url][\/B]
 Voters: ${voters}
@@ -479,11 +487,15 @@ Num votes:  ${num_voters}
 					 $b->[0] <=> $a->[0]                      # Number of voters
 						 || $a->[1]{name} cmp $b->[1]{name}   # Plan name
 					 }
-					 map { [ scalar keys %{$_->{voters}}, $_ ] }
+					 map { [ scalar keys %{$_->{votes}}, $_ ] }
 						 values %$plans
 			 );
-
+	DEBUG "all voters: ", Dumper $all_voters;
+	my $count = scalar keys %$all_voters;
+	$result .= "\n\nNumber of voters: $count";
+	
 	DEBUG "Leaving format_plans.";
+	
 	return $result;
 }
 

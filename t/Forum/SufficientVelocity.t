@@ -39,7 +39,7 @@ is_deeply( init(first_url => $url),
 
 
 {
- 	is(get_page($url), slurp _make_path( $url ), "correctly got page 13" );
+ 	is(get_page($url), slurp( _make_path( $url ) ), "correctly got page 13" );
 };
 
 isa_ok( make_root($url), 'HTML::TreeBuilder', 'make_root($url)' );
