@@ -9,13 +9,13 @@ use HTML::Element;
 use Log::Log4perl qw(:easy);
 use HTML::TreeBuilder 5 -weak;
 
-use constant VERBOSE => 0;
 use constant BASE_URL => 'https://forums.sufficientvelocity.com/';
 
-our $VERSION = 1.1;
-our $POSTS_PER_PAGE = 25; # Deliberately made a package variable 
+use constant VERBOSE => 0;
+Log::Log4perl->easy_init($DEBUG);  # use $DEBUG or $ERROR
 
-Log::Log4perl->easy_init($ERROR);  # use $DEBUG or $ERROR
+our $VERSION = 1.2;
+our $POSTS_PER_PAGE = 25; # Deliberately made a package variable 
 
 our (@ISA, @EXPORT_OK, @EXPORT);
 BEGIN {
@@ -219,7 +219,7 @@ sub make_plan {
 
 	return if exclude_users()->{ $author };
 	if ( $id < first_post_id() ) {
-		DEBUG "ID is $id, first is first_post_id().  Skipping.";
+		DEBUG "ID is $id, first is ", first_post_id(), ".  Skipping.";
 		return;
 	}
 	
@@ -431,7 +431,13 @@ sub tally_plans {
 			#    that as well.
 			#			
 			my $key = lc canonize_plan_name($v);
-			$key =~ s/\W//g;
+
+			#    Explicitly specify ASCII because otherwise we can get
+			#    things like different encodings for the ellipsis
+			#    character (seen that) which cause two otherwise
+			#    identical votes to not be registered as the same
+			#
+			$key =~ s/[a-zA-Z0-9]//g;  
 
 			DEBUG "Vote is: '$v'. Key is: '$key'";
 			my $author = author_ref( $post->{author} );
