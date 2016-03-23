@@ -12,7 +12,7 @@ use HTML::TreeBuilder 5 -weak;
 use constant BASE_URL => 'https://forums.sufficientvelocity.com/';
 
 use constant VERBOSE => 0;
-Log::Log4perl->easy_init($DEBUG);  # use $DEBUG or $ERROR
+Log::Log4perl->easy_init($ERROR);  # use $DEBUG or $ERROR
 
 our $VERSION = 1.2;
 our $POSTS_PER_PAGE = 25; # Deliberately made a package variable 
@@ -64,7 +64,7 @@ BEGIN {
 
 ###----------------------------------------------------------------------
 
-my $PLAN_NAME_PREFIX = qr/^\s*\[[X-]\]\s*/i;
+my $PLAN_NAME_PREFIX = qr/^\s*\[[+X-]\]\s*/i;
 
 ###----------------------------------------------------------------------
 
@@ -322,9 +322,9 @@ sub content_text {
 sub clean_text {
 	my $text = shift;
 	
-	$text =~ s/ //g;
-	$text =~ s/^\s*//;
-	$text =~ s/\s*$//;
+	$text =~ s/ //g;    # 
+	$text =~ s/^\s*//;  # Strip non-printing character that SV likes to 
+	$text =~ s/\s*$//;  # randomly add, plus leading and trailing whitespace
 
 	return $text;
 }
