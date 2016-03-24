@@ -401,8 +401,10 @@ sub vote_type {
 
 	DEBUG "in vote_type: vote is '$vote'";
 	
-	my ($type) = ($vote =~ /\[([X-])\]/i);
+	my ($type) = ($vote =~ /\[([+X-])\]/i);
 
+	$type = 'X' if $type eq '+';
+	
 	DEBUG "vote type is: $type";
 	
 	return $type; #  Returns either 'X' or '-' for add to / remove from vote
