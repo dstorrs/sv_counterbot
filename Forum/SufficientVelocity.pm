@@ -358,19 +358,21 @@ sub get_posts {
 ###----------------------------------------------------------------------
 
 sub get_votes {
-	my $plan = shift || die "No post specified in get_votes";
+	my $plan = shift || die "No plan specified in get_votes";
 	my $text = $plan->{text};
 
-	#    Votes can now have either '[X]' or '[-]' and '[x]' will be forcibly
-	#    uppercased.  '[-]' means 'remove me from this plan'
+	#    Votes can now have: '[X]', '[x]', '[+]', or '[-]'.  The first
+	#    three are all votes for a plan, while '[-]' means 'remove me
+	#    from this plan'.  The votes-for signs will all be converted
+	#    to '[X]'
 	#
 
 	DEBUG "in get_votes, text is: $text";
-	my $result = [ map { s/\[x\]/\[X\]/; $_ }
+	my $result = [ map { s/\[[x\+]\]/\[X\]/; $_ }
 					   grep { /(${PLAN_NAME_PREFIX}.+)/ }
 						   split /\n/, $text
 				   ];
-	DEBUG "in get_votes, result is: ", Dumper $result;
+	DEBUG "in get_votes for id $plan->{id}, author $plan->{author}, found votes?: ", (scalar @$result) ? 'yes' : 'no', ", result is: ", Dumper $result;
 	
 	return $result;
 }
@@ -415,6 +417,8 @@ sub vote_type {
 sub tally_plans {
 	my @posts = @_;
 
+	DEBUG "entering tally_places with N posts: ", scalar @posts;
+	
 	my $plan_votes = {};
 
 	for my $post ( @posts ) {
@@ -434,12 +438,12 @@ sub tally_plans {
 			#			
 			my $key = lc canonize_plan_name($v);
 
-			#    Explicitly specify ASCII because otherwise we can get
+			#    Explicitly strip non-ASCII because otherwise we can get
 			#    things like different encodings for the ellipsis
 			#    character (seen that) which cause two otherwise
 			#    identical votes to not be registered as the same
 			#
-			$key =~ s/[a-zA-Z0-9]//g;  
+			$key =~ s/[^a-zA-Z0-9]//g;  
 
 			DEBUG "Vote is: '$v'. Key is: '$key'";
 			my $author = author_ref( $post->{author} );
@@ -469,7 +473,7 @@ sub tally_plans {
 		}		
 	}
 
-	#DEBUG Dumper "plan votes: ", $plan_votes;
+	DEBUG Dumper "leaving tally_votes.  plan votes: ", $plan_votes;
 	
 	return $plan_votes;
 }
@@ -496,7 +500,7 @@ sub format_plans {
 	my $plans = shift;
 
 	my $all_voters = {};
-	DEBUG "Entering format_plans...";
+	DEBUG "Entering format_plans with plans: ", Dumper $plans;
 	my $format_plan = sub {
 		my $p = shift;
 
@@ -518,7 +522,7 @@ Num votes:  ${num_voters}
 };
 	};
 
-	my $result = "\[b\]Mac CounterBot by \@eaglejarl, version $VERSION\[\/b\]\n\n";
+	my $result = "\[b\]CounterBot by eaglejarl, version $VERSION\[\/b\]\n\n";
 	$result .= join('',
 		 map { $format_plan->($_) }
 			 #
