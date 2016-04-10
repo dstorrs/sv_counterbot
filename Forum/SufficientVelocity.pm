@@ -171,9 +171,9 @@ sub get_page_urls_after {
 		#    out what page that will be on
 		$last_page = int 1 + stop_id() / $POSTS_PER_PAGE;
 	}
-	
-	$base_url =~ s/$sentinel//;
-	$base_url = 'https://forums.sufficientvelocity.com/' . $base_url;
+
+	$base_url =~ s/\Q$sentinel\E//;
+	$base_url = BASE_URL . $base_url;
 	$current_page++;  #  We already have the current one, so skip it
 
 	return () if $current_page > $last_page;
