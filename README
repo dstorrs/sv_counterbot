@@ -1,0 +1,91 @@
+NAME
+    CounterBot
+
+SYNOPSIS
+    Counts up votes in a quest on SufficientVelocity. Uses approval voting,
+    so questers can vote for multiple plans.
+
+SYNOPSIS
+        $ ./perl_tallyho.pl --page http://forums.sufficientvelocity.../page-2  [--id 111] [--stop 212] [--gm bob,kim]
+
+    This says "start with this URL and roll forward to the end of the
+    thread. Ignore anything before post #111 and stop when you get to post
+    #212. The GMs are users 'bob' and 'kim', so ignore their posts."
+
+    Anything in [quote] tags will be ignored. Anything by someone listed as
+    a GM will be ignored.
+
+    NOTE: SV does not use, and will not respond to, URLs ending in 'page-1'.
+    If you get an empty report back, the first thing to do is verify that
+    the URL you used actually works.
+
+DESCRIPTION
+    Reads through from the specified page (or post) to the last page in the
+    thread, compiles a list of all votes, and then spits out a report at the
+    end summarizing who voted for what. A typical report might be:
+
+        CounterBot (eaglejarl), version <N>
+
+        [B]Plan name: [URL=https://forums.sufficientvelocity.com/posts/5468116/]Arrival[/url][/B]
+        Voters: @AZATHOTHoth, @Citrus, @FullNothingness, @godofbiscuit, @Jackercracks, @Kingspace, @Sigil, @tarrangar, @TempestK, @TheEyes, @Void Stalker
+        Num votes:  11
+    
+        [B]Plan name: [URL=https://forums.sufficientvelocity.com/posts/5469924/]Arrival + Wands[/url][/B]
+        Voters: @Angle, @DonLyn, @FullNothingness, @HyperCatnip, @Jackercracks, @Radvic, @rangerscience, @RedV, @Solace
+        Num votes:  9
+    
+        [B]Plan name: [URL=https://forums.sufficientvelocity.com/posts/5469924/]Arrival + Wands + Survivors[/url][/B]
+        Voters: @Angle, @Jack Stargazer, @Jackercracks, @rangerscience, @TheEyes
+        Num votes:  5
+    
+        ...etc...
+
+    The various plans are linked back to where they were defined and
+    everyone who voted is given an alert so that they know the results are
+    up and can confirm their votes if they like.[1]
+
+    Note that this is *approval voting*. In the report above, @Jackercracks
+    voted for three separate plans so he's listed on all those plans. That's
+    a feature, not a bug.
+
+USE ON OTHER SITES
+    CounterBot will probably work on any other board written on the same
+    codebase as SV -- SpaceBattles and Questionable Questing should be fine,
+    although that hasn't been tested.
+
+EDGE CASES AND NOTES
+  Retconned votes cause improper linking in the report
+    Once in a while you'll see this:
+
+     - Al writes post #2
+     - Bob writes post #3 with the "[X] Do FOO" voting plan
+     - Al goes back and edits post #2 to contain a vote for "Do FOO".
+
+    In this case the plan will be linked to post #2, since that was where
+    CounterBot first saw the plan referenced.
+
+    There's not much to do about this, so ask the players not to retcon
+    their votes.
+
+  Voting by username
+    The other tallybots on SV support voting by username, like so:
+
+    In post #2 Alice writes: "[x] Plan Take Back Our Library From The Bad
+    Guys!"
+
+    In post #7 Bob writes: "[x] Alice"
+
+    Bob is saying "vote for the plan that Alice wrote". This works in
+    first-past-the-post voting, where each person can only have one plan and
+    each voter can only vote for one plan. With approval voting you can't
+    vote by username because if the person went back and added another plan
+    later you would suddenly be voting for that as well.
+
+TODO
+    - A config file should be established so that standard variables (e.g.
+    GM names) don't need to be entered each time. Could replace CLI options
+    entirely, although it's still good to have those for convenience.
+
+    - Cache pages in a subfolder so that we don't need to retrieve them
+    every time.
+
