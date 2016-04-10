@@ -27,7 +27,34 @@ verify that the URL you used actually works.
 
 Reads through from the specified page (or post) to the last page in
 the thread, compiles a list of all votes, and then spits out a report
-at the end summarizing who voted for what.  A typical report might be:
+at the end summarizing who voted for what.
+
+=head2 How to Vote
+
+Votes can look like any of these:
+
+    [x] Arrival
+    [X] Arrival + Wands
+    [+] Arrival + Wands + Survivors
+
+The part in brackets says that it's a vote, whatever comes after it is
+the name of the vote.  'Plan' and 'Plan:' will be stripped off the
+front, so "[x] Plan: Foo" is the same as "[x] Foo"
+
+Players can vote for as many plans as they want.  If they want to
+change a vote then they need to cancel their old vote and issue a new
+one.  For example, if Bob wants to stop voting for 'Arrival' and start
+voting for 'Arrival + Wands', he would do this:
+
+    [-] Arrival
+    [x] Arrival + Wands
+
+(Again, that [x] could also be an [X] or an [+].  The bot is intendede
+to be as permissive as possible.)
+
+=head2 The Report
+
+A typical report might be:
 
     CounterBot (eaglejarl), version <N>
 
@@ -47,18 +74,20 @@ at the end summarizing who voted for what.  A typical report might be:
 
 The various plans are linked back to where they were defined and
 everyone who voted is given an alert so that they know the results are
-up and can confirm their votes if they like.[1]
+up and can confirm their votes if they like.
 
-Note that this is *approval voting*.  In the report above,
+Note that this is I<approval voting>.  In the report above,
 @Jackercracks voted for three separate plans so he's listed on all
 those plans.  That's a feature, not a bug.
 
 
 =head1 USE ON OTHER SITES
 
-CounterBot will probably work on any other board written on the
-same codebase as SV -- SpaceBattles and Questionable Questing should
-be fine, although that hasn't been tested.
+With some minor tweaks CounterBot would probably work on any other
+board written on the same codebase as SV (e.g. SpaceBattles and
+Questionable Questing).  The only change should be to turn the
+constant BASE_URL into a command line param; let me know if anyone
+wants that.
 
 
 =head1  EDGE CASES AND NOTES
