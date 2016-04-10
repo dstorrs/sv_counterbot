@@ -24,7 +24,9 @@ my ($first_post_id, $first_url, $GMs, $stop) = get_cli_options();
 
 #    Set some defaults
 if ( ! @$GMs ) {
-	given ($first_url) {
+	no warnings 'experimental::smartmatch';  # 'when' will warn even if there's no ~~ involved
+
+	for ($first_url) {
 		when (/slivers-in-the-chaos-lands/) { @$GMs = qw/eaglejarl/ }
 		when (/marked-for-death/)           { @$GMs = qw/eaglejarl Jackercracks
 														 AugSphere Velorien/; }
