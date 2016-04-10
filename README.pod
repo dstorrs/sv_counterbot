@@ -29,10 +29,9 @@ Reads through from the specified page (or post) to the last page in
 the thread, compiles a list of all votes, and then spits out a report
 at the end summarizing who voted for what.  A typical report might be:
 
-    Mac CounterBot (@eaglejarl), version 0.9
+    CounterBot (eaglejarl), version <N>
 
-
-    [B]Plan name: [URL=https://forums.sufficientvelocity.com/posts/5468116/]Arrival  [/url][/B]
+    [B]Plan name: [URL=https://forums.sufficientvelocity.com/posts/5468116/]Arrival[/url][/B]
     Voters: @AZATHOTHoth, @Citrus, @FullNothingness, @godofbiscuit, @Jackercracks, @Kingspace, @Sigil, @tarrangar, @TempestK, @TheEyes, @Void Stalker
     Num votes:  11
     
@@ -62,7 +61,9 @@ same codebase as SV -- SpaceBattles and Questionable Questing should
 be fine, although that hasn't been tested.
 
 
-=head1  EDGE CASES 
+=head1  EDGE CASES AND NOTES
+
+=head2  Retconned votes cause improper linking in the report
 
 Once in a while you'll see this:
 
@@ -73,12 +74,23 @@ Once in a while you'll see this:
 In this case the plan will be linked to post #2, since that was where
 CounterBot first saw the plan referenced.  
 
-There's not much to do about this without adding restrictions to the
-voting.  Just ask the players not to do that.
+There's not much to do about this, so ask the players not to retcon their votes.  
+
+=head2 Voting by username
+
+The other tallybots on SV support voting by username, like so:
+
+In post #2 Alice writes:  "[x] Plan Take Back Our Library From The Bad Guys!"
+
+In post #7 Bob writes:    "[x] Alice"
+
+Bob is saying "vote for the plan that Alice wrote".  This works in
+first-past-the-post voting, where each person can only have one plan
+and each voter can only vote for one plan.  With approval voting you
+can't vote by username because if the person went back and added
+another plan later you would suddenly be voting for that as well.
 
 =head1  TODO
-
-- Support voting by username.
 
 - A config file should be established so that standard variables
   (e.g. GM names) don't need to be entered each time.  Could replace
