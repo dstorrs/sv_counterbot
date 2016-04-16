@@ -10,9 +10,10 @@ use Log::Log4perl qw(:easy);
 use HTML::TreeBuilder 5 -weak;
 
 use constant BASE_URL => 'https://forums.sufficientvelocity.com/';
-
 use constant VERBOSE => 0;
-Log::Log4perl->easy_init($ERROR);  # use $DEBUG or $ERROR
+
+#Log::Log4perl->easy_init( $DEBUG );
+Log::Log4perl->easy_init( $ERROR );
 
 our $VERSION = 1.2;
 our $POSTS_PER_PAGE = 25; # Deliberately made a package variable 
@@ -80,32 +81,27 @@ my $PLAN_NAME_PREFIX = qr/^\s*\[[+X-]\]\s*/i;
 	sub first_post_id { _get_data('first_post_id') }
 	sub exclude_users { _get_data('exclude_users') }
 	sub first_url     { _get_data('first_url')     }
-	sub stop_id       { _get_data('stop_id')       }
-	
+	sub stop_id       { _get_data('stop_id') || 0  }
+
 	sub init {
-		#    I could make this into an OO constructor, but OO is overkill
-		#    for what we need.  In the future, if I were going to expand
-		#    this to cover other forum boards with slightly different
-		#    codebases, it *might* make sense to go OO and have the
-		#    differences be defined as subclasses.  For now, though, a
-		#    simple 'init' is fine.
-		
 		my %args = @_;
 
 		#    Options:
 		# first_url      => 'http...',
 		# first_post_id  => 2,
+		# last_post_id   => 27,
 		# exclude_users  => [ qw/bob tom sue/ ], #  Will be converted to qw/@bob @tom @sue/ if it isn't already
 
 
 		unless ( $args{first_url} && $args{first_url} =~ /^\s*http/ ) {
-			die "Must specify a first page URL using: first_url => 'http...'"
+			die "Must specify a first page URL using: first_url => 'http / http...'"
 		}
 		
 		$args{first_url} =~ s/^\s*//;
 		$args{first_url} =~ s/\s*$//;
 		
 		$args{first_post_id} ||= 0;
+		$args{last_post_id}  ||= 0;
 		
 		$args{ exclude_users } ||= [];
 
@@ -485,11 +481,11 @@ sub get_page {
 
 	say STDERR "getting page for $page_url";
 	
-	#    OSX 10.11 (El Capitan) ships with out-of-date SSL modules,
-	#    meaning that wget, Perl, python, and a few other things can't
-	#    talk to https websites.  For whatever reason, curl
-	#    works--maybe libssl and libcrypto were statically linked?
-	#    Anyway, I'm reduced to this hack.
+	#    OSX 10.11 (El Capitan) ships with out-of-date SSL modules and
+	#    no openssl headers, meaning that wget, Perl, python, and a
+	#    few other things can't talk to https websites.  For whatever
+	#    reason, curl works--maybe libssl and libcrypto were
+	#    statically linked?  Anyway, I'm reduced to this hack.
 	#
 	`curl $page_url 2>/dev/null`;
 }
