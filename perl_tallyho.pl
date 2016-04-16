@@ -20,7 +20,8 @@ use constant BASE_URL => 'https://forums.sufficientvelocity.com/';
 
 #---------- Get all necessary command values 
 
-my ($first_post_id, $first_url, $GMs, $stop) = get_cli_options();
+my ($first_post_id, $first_url, $GMs, $stop, $debug) = get_cli_options();
+our $DEBUG = $debug || 0;
 
 #    Set some defaults
 if ( ! @$GMs ) {
@@ -37,7 +38,7 @@ $stop ||= 0;
 
 $first_url = BASE_URL . $first_url  unless $first_url =~ /^https?:/;
 
-init (
+init(
 	first_url       => $first_url,
 	first_post_id   => $first_post_id,
 	exclude_users   => $GMs,
@@ -53,12 +54,13 @@ exit(0);
 ###----------------------------------------------------------------------
 
 sub get_cli_options {
-	my ($first_post_id, $first_url, $GMs, $temp, $stop) = (0);
+	my ($first_post_id, $first_url, $GMs, $temp, $stop, $debug) = (0);
 	
 	GetOptions("page|start|p|s=s"   => \$first_url,         # string
 			   "first_post|id=i"    => \$first_post_id,      # integer
 			   "gm=s@"              => \$temp,
 			   "stop=i"             => \$stop,
+			   "debug"              => \$debug,
 		   )  or die("Error in command line arguments\n");
 	
 	#  Support both: '--gm bob --gm tom'  and '--gm bob,tom'
@@ -66,7 +68,7 @@ sub get_cli_options {
 
 	check_usage( $first_url, $first_post_id, $GMs, $stop );
 	
-	return ($first_post_id, $first_url, $GMs, $stop);
+	return ($first_post_id, $first_url, $GMs, $stop, $debug);
 }
 
 ###----------------------------------------------------------------------
