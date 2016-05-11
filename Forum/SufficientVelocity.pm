@@ -16,7 +16,7 @@ use constant VERBOSE => 0;
 Log::Log4perl->easy_init( $ERROR );
 
 our $VERSION = 1.2;
-our $POSTS_PER_PAGE = 25; # Deliberately made a package variable 
+our $POSTS_PER_PAGE = 25; # Deliberately made a package variable
 
 our (@ISA, @EXPORT_OK, @EXPORT);
 BEGIN {
@@ -101,7 +101,7 @@ my $PLAN_NAME_PREFIX = qr/^\s*\[[+X-]\]\s*/i;
 		$args{first_url} =~ s/\s*$//;
 		
 		$args{first_post_id} ||= 0;
-		$args{last_post_id}  ||= 0;
+		$args{last_post_id}  ||= $args{stop_id} || 0;
 		
 		$args{ exclude_users } ||= [];
 
@@ -135,6 +135,14 @@ sub generate_report {
 						)
 		)
 	);
+}
+
+
+
+###----------------------------------------------------------------------
+
+sub has_cache {
+
 }
 
 ###----------------------------------------------------------------------
@@ -222,7 +230,11 @@ sub make_plan {
 	remove_quote_blocks($post);  # Ignore text that was quoted from an earlier post
 
 	#    Retrieve the link to the post
-	my $link = $post->look_down(_tag => 'a', href => qr<posts/\d+/>)->attr('href');
+	my $link = $post->look_down(
+		_tag => 'a',
+		class => qr/hashPermalink/,
+		href => qr<posts/\d+/>
+	)->attr('href');
 	unless ( $link =~ /^http/ ) {
 		$link = BASE_URL . $link;  
 	}
@@ -413,7 +425,7 @@ sub vote_type {
 sub tally_plans {
 	my @posts = @_;
 
-	DEBUG "entering tally_places with N posts: ", scalar @posts;
+	DEBUG "entering tally_plans with N posts: ", scalar @posts;
 	
 	my $plan_votes = {};
 
@@ -515,6 +527,7 @@ sub format_plans {
 [B]Plan name: [URL=${link}]${name}[\/url][\/B]
 Voters: ${voters}
 Num votes:  ${num_voters}
+
 };
 	};
 
