@@ -15,7 +15,7 @@ use constant VERBOSE => 0;
 #Log::Log4perl->easy_init( $DEBUG );
 Log::Log4perl->easy_init( $ERROR );
 
-our $VERSION = 1.3;
+our $VERSION = 1.4;
 our $POSTS_PER_PAGE = 25; # Deliberately made a package variable
 
 our (@ISA, @EXPORT_OK, @EXPORT);
@@ -397,7 +397,7 @@ sub canonize_plan_name {
 	
 	DEBUG "before, name is $name";
 
-	$name =~ s/${PLAN_NAME_PREFIX}(?:\s*Plan\b\s*:?)?\s*//i;
+	$name =~ s/${PLAN_NAME_PREFIX}(?:\s*(Action|Training)\s*Plan\b\s*:?)?\s*//i;
 
 	DEBUG "after, name is $name";
 
