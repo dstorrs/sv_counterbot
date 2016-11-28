@@ -8,9 +8,13 @@ SYNOPSIS
 SYNOPSIS
         $ ./perl_tallyho.pl --page http://forums.sufficientvelocity.../page-2  [--id 111] [--stop 212] [--gm bob,kim]
 
-    This says "start with this URL and roll forward to the end of the
-    thread. Ignore anything before post #111 and stop when you get to post
-    #212. The GMs are users 'bob' and 'kim', so ignore their posts."
+    (NB: The square brackets mean 'optional parameter'.  Do not
+    actually include the '[' or ']' on your command line.)
+	
+    The above command says "start with this URL and roll forward to
+    the end of the thread. Ignore anything before post #111 and stop
+    when you get to post #212. The GMs are users 'bob' and 'kim', so
+    ignore their posts."
 
     Anything in [quote] tags will be ignored. Anything by someone listed as
     a GM will be ignored.
