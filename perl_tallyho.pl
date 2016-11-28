@@ -62,7 +62,7 @@ sub get_cli_options {
 			   "stop=i"             => \$stop,
 			   "debug"              => \$debug,
 		   )  or die("Error in command line arguments\n");
-	
+
 	#  Support both: '--gm bob --gm tom'  and '--gm bob,tom'
 	@$GMs = split(',', join(',', @{ $temp || []}));
 

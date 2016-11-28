@@ -2,13 +2,15 @@
 
 use strict;
 use warnings;
+use feature ':5.10';
+
 use Test::More;
 use Test::Exception;
 use File::Slurp qw/slurp/;
 use File::Spec;
 use Cwd;
-use feature ':5.10';
-
+use File::Spec;
+use File::Basename;
 
 use lib "../../";
 BEGIN {
@@ -39,7 +41,11 @@ is_deeply( init(first_url => $url),
 
 
 {
- 	is(get_page($url), slurp( _make_path( $url ) ), "correctly got page 13" );
+	my $dirpath = File::Spec->catfile( (fileparse( File::Spec->rel2abs( __FILE__ ) ))[1], 'cache');
+	mkdir $dirpath;
+	
+	ok( -e $dirpath && -d _, "cache dir exists" );
+ 	is( get_page($url), slurp( _make_path( $url ) ), "correctly got page 13" );
 };
 
 isa_ok( make_root($url), 'HTML::TreeBuilder', 'make_root($url)' );

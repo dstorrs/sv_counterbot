@@ -8,6 +8,7 @@ use Data::Dumper;
 use HTML::Element;
 use Log::Log4perl qw(:easy);
 use HTML::TreeBuilder 5 -weak;
+use File::Slurp qw/slurp/;
 
 use constant BASE_URL => 'https://forums.sufficientvelocity.com/';
 use constant VERBOSE => 0;
@@ -15,7 +16,7 @@ use constant VERBOSE => 0;
 #Log::Log4perl->easy_init( $DEBUG );
 Log::Log4perl->easy_init( $ERROR );
 
-our $VERSION = 1.4;
+our $VERSION = 1.5;
 our $POSTS_PER_PAGE = 25; # Deliberately made a package variable
 
 our (@ISA, @EXPORT_OK, @EXPORT);
@@ -41,6 +42,9 @@ BEGIN {
 						  tally_plans
 						  canonize_plan_name
 						  vote_type
+						  threadmarks_url
+						  get_threadmarks
+						  word_count
 						 /;
 	our %EXPORT_TAGS = (all => [ qw/generate_report
 									get_page
@@ -58,6 +62,9 @@ BEGIN {
 									tally_plans
 									canonize_plan_name
 									vote_type
+									threadmarks_url
+									get_threadmarks
+									word_count
 								   /
 							   ]
 					);
@@ -148,8 +155,17 @@ sub has_cache {
 ###----------------------------------------------------------------------
 
 sub make_root {  
-	my $url = shift;
-	my $root = HTML::TreeBuilder->new_from_content( get_page($url) );
+	my $url_or_filepath = shift or die "No url/filepath specified in make_root()";
+
+	my $source;
+	if ($url_or_filepath =~ /^http/) {
+		$source = get_page($url_or_filepath);
+	}
+	else {
+		$source = slurp $url_or_filepath;
+	}
+	
+	my $root = HTML::TreeBuilder->new_from_content( $source );
 	$root->objectify_text;
 	return $root;
 }
@@ -323,6 +339,28 @@ sub content_text {
 	);
 	
 	return clean_text( $text );
+}
+
+###----------------------------------------------------------------------
+
+sub word_count {
+	my $post = shift() or die "No node provided to word_count()";
+	
+	my $body = $post->look_down(
+		_tag => 'div',
+		class => qr/messageContent/,
+	);
+	
+	if ( $body ) {
+		my $text = content_text($body);
+		say "text is: $text";
+		my @words =  split /\s+/, content_text($body);
+		say "words is: ", Dumper [ @words ];
+		return scalar @words;
+	}
+	else {
+		warn "Nothing found with a 'messageContent' class.";
+	}
 }
 
 ###----------------------------------------------------------------------
@@ -531,7 +569,7 @@ Num votes:  ${num_voters}
 };
 	};
 
-	my $result = "\[b\]CounterBot by eaglejarl, version $VERSION\[\/b\]\n\n";
+	my $result = "\[b\]CounterBot, version $VERSION\[\/b\]\n\n";
 	$result .= join('',
 		 map { $format_plan->($_) }
 			 #
@@ -546,6 +584,8 @@ Num votes:  ${num_voters}
 					 map { [ scalar keys %{$_->{voters}}, $_ ] }
 						 values %$plans
 			 );
+	DEBUG "format_plans, result is: '$result'";
+	
 	DEBUG "all voters: ", Dumper $all_voters;
 	my $count = scalar keys %$all_voters;
 	$result .= "\n\nNumber of voters: $count";
@@ -568,6 +608,45 @@ sub output_report {
 
 ###----------------------------------------------------------------------
 
+sub threadmarks_url {
+  my $url = shift() or die "No url specified for threadmarks_url()";  #e.g. https://forums.sufficientvelocity.com/threads/marked-for-death-a-rational-naruto-quest.24481/
+
+  $url =~ s/^\s*//;
+  $url =~ s/\s*$//;
+  chop $url if $url =~ m{/$};
+  return "$url/threadmarks";
+}
+
+###----------------------------------------------------------------------
+
+sub get_threadmarks_page {
+	my $root = make_root( threadmarks_url( shift() ) );
+	say "got page for threadmarks: $root";
+	return $root;
+}
+
+###----------------------------------------------------------------------
+
+sub get_threadmarks {
+	my $url = shift;
+
+	say "entering get_threadmarks with url '$url'";
+
+	map {
+		my $i = $_->look_down( _tag => 'a' );
+		$i->objectify_text;
+		[
+			$i->attr('href'),
+			clean_text( $i->look_down(_tag => '~text')->attr('text') )
+		]
+	}
+		get_threadmarks_page( $url )->look_down(
+			_tag => 'li',
+			class => qr/\b threadmarkItem \b/x,
+		);
+}
+
+###----------------------------------------------------------------------
 
 1;
 
