@@ -499,8 +499,8 @@ sub tally_plans {
 			
 			if ( $type eq "-" ) { # Voting to be removed from that plan
 				say STDERR "deleting cancelled vote for plan $key by voter $author";
-				delete $plan_votes->{$key}{voters}{$author};
-				if ( 0 == keys %{$plan_votes->{$key}{voters}} ) {
+				delete $plan_votes->{$key}{voters}{YES}{$author};
+				if ( 0 == keys %{$plan_votes->{$key}{voters}{YES}} ) {
 					delete $plan_votes->{$key};
 				}
 				next;
@@ -512,10 +512,10 @@ sub tally_plans {
 					id     => $post->{id},
 					author => $author,
 					link   => $post->{link},
-					voters => {},
+					voters => { YES => {}, NO => {} },
 				};
 			}
-			$plan_votes->{$key}{voters}{ $author }++;
+			$plan_votes->{$key}{voters}{YES}{ $author }++;
 		}		
 	}
 
@@ -551,6 +551,7 @@ sub format_plans {
 		my $p = shift;
 
 		my ($name, $voters, $link) = map { $p->{$_} } qw/name voters link/;
+		$voters = $voters->{YES};
 		my $num_voters = keys %$voters;
 		
 		DEBUG "Voters is: ", Dumper $voters;
@@ -565,7 +566,6 @@ sub format_plans {
 [B]Plan name: [URL=${link}]${name}[\/url][\/B]
 Voters: ${voters}
 Num votes:  ${num_voters}
-
 };
 	};
 
@@ -581,7 +581,8 @@ Num votes:  ${num_voters}
 					 $b->[0] <=> $a->[0]                      # Number of voters
 						 || $a->[1]{name} cmp $b->[1]{name}   # Plan name
 					 }
-					 map { [ scalar keys %{$_->{voters}}, $_ ] }
+				 map { say Dumper $_; $_ }
+					 map { [ scalar( keys %{$_->{voters}{YES}} ), $_ ] }
 						 values %$plans
 			 );
 	DEBUG "format_plans, result is: '$result'";
