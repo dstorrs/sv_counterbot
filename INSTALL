@@ -14,8 +14,8 @@ perl -v;
 echo "NOTE: You should have '.' as the last entry in the following list:";
 perl -e 'print "$_\n" for @INC';
 
-echo "NOTE: Installing these modules: HTML::TreeBuilder  Data::Dumper Getopt::Long  HTML::Element Log::Log4perl";
-cpan install Cwd  HTML::TreeBuilder  Data::Dumper File::Slurp Getopt::Long  HTML::Element Log::Log4perl Test::More  Test::Exception;
+echo "NOTE: Installing these modules: HTML::TreeBuilder  Data::Dumper Getopt::Long  HTML::Element Log::Log4perl LWP::UserAgent LWP::UserAgent::https";
+cpan install Cwd  HTML::TreeBuilder  Data::Dumper File::Slurp Getopt::Long  HTML::Element Log::Log4perl Test::More  Test::Exception  LWP::UserAgent LWP::UserAgent::https;
 
 echo "Go back to where it says START and look at each of the 'NOTE' entries"; 	
 

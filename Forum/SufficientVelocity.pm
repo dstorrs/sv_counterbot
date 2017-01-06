@@ -9,6 +9,7 @@ use HTML::Element;
 use Log::Log4perl qw(:easy);
 use HTML::TreeBuilder 5 -weak;
 use File::Slurp qw/slurp/;
+use LWP::UserAgent;
 
 use constant BASE_URL => 'https://forums.sufficientvelocity.com/';
 use constant VERBOSE => 0;
@@ -164,9 +165,11 @@ sub make_root {
 	else {
 		$source = slurp $url_or_filepath;
 	}
-	
+
 	my $root = HTML::TreeBuilder->new_from_content( $source );
 	$root->objectify_text;
+	#say $root->as_HTML;
+
 	return $root;
 }
 
@@ -353,9 +356,7 @@ sub word_count {
 	
 	if ( $body ) {
 		my $text = content_text($body);
-		say "text is: $text";
 		my @words =  split /\s+/, content_text($body);
-		say "words is: ", Dumper [ @words ];
 		return scalar @words;
 	}
 	else {
@@ -520,7 +521,7 @@ sub tally_plans {
 	}
 
 	DEBUG Dumper "leaving tally_votes.  plan votes: ", $plan_votes;
-	
+
 	return $plan_votes;
 }
 
@@ -528,16 +529,24 @@ sub tally_plans {
 
 sub get_page {
 	my $page_url = shift or	die "no page url specified in get_page()";
+	state $ua = LWP::UserAgent->new(ssl_opts => { verify_hostname => 1 },
+									agent => "Mozilla/5.0"
+								);
 
 	say STDERR "getting page for $page_url";
-	
-	#    OSX 10.11 (El Capitan) ships with out-of-date SSL modules and
-	#    no openssl headers, meaning that wget, Perl, python, and a
-	#    few other things can't talk to https websites.  For whatever
-	#    reason, curl works--maybe libssl and libcrypto were
-	#    statically linked?  Anyway, I'm reduced to this hack.
-	#
-	`curl $page_url 2>/dev/null`;
+
+	#    HTML::TreeBuilder's new_from_url wasn't handling some https sites
+	my $res = $ua->get($page_url);
+	if ( $res->code == 200 ) {
+		my $root = eval {
+			HTML::TreeBuilder->new_from_content(
+				$res->decoded_content
+			);
+		};
+		return $root->as_HTML if ( defined $root );
+	}
+	say STDERR "Unable to fetch page via LWP.  Falling back to using `curl`; This won't work on Windows.  Sorry, Windows folks. :/";
+	return `curl $page_url 2>/dev/null`;  #fallback squinky hack that won't work on Windows
 }
 
 ###----------------------------------------------------------------------
@@ -581,7 +590,6 @@ Num votes:  ${num_voters}
 					 $b->[0] <=> $a->[0]                      # Number of voters
 						 || $a->[1]{name} cmp $b->[1]{name}   # Plan name
 					 }
-				 map { say Dumper $_; $_ }
 					 map { [ scalar( keys %{$_->{voters}{YES}} ), $_ ] }
 						 values %$plans
 			 );
