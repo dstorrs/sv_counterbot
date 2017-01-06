@@ -29,6 +29,7 @@ if ( ! @$GMs ) {
 
 	for ($first_url) {
 		when (/slivers-in-the-chaos-lands/) { @$GMs = qw/eaglejarl/ }
+		when (/ninja-trails-kung-fu-battle-wizards-in-the-real-world/) { @$GMs = qw/Radvic/ }
 		when (/marked-for-death/)           { @$GMs = qw/eaglejarl Jackercracks
 														 AugSphere Velorien/; }
 		default {}

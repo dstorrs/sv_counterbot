@@ -242,7 +242,7 @@ sub make_plan {
 
 	return if exclude_users()->{ $author };
 	if ( $id < first_post_id() ) {
-		DEBUG "ID is $id, first is ", first_post_id(), ".  Skipping.";
+		say STDERR "Current post ID is $id; I was told to ignore everything before ", first_post_id(), ".  Ignoring.";
 		return;
 	}
 	
@@ -578,6 +578,7 @@ Num votes:  ${num_voters}
 };
 	};
 
+	say "\n\n\n";
 	my $result = "\[b\]CounterBot, version $VERSION\[\/b\]\n\n";
 	$result .= join('',
 		 map { $format_plan->($_) }
