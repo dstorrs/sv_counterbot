@@ -17,7 +17,7 @@ use constant VERBOSE => 0;
 #Log::Log4perl->easy_init( $DEBUG );
 Log::Log4perl->easy_init( $ERROR );
 
-our $VERSION = 1.5;
+our $VERSION = 1.6;
 our $POSTS_PER_PAGE = 25; # Deliberately made a package variable
 
 our (@ISA, @EXPORT_OK, @EXPORT);
@@ -90,6 +90,7 @@ my $PLAN_NAME_PREFIX = qr/^\s*\[[+X-]\]\s*/i;
 	sub exclude_users { _get_data('exclude_users') }
 	sub first_url     { _get_data('first_url')     }
 	sub stop_id       { _get_data('stop_id') || 0  }
+	sub space         { _get_data('space')   || 1  }
 
 	sub init {
 		my %args = @_;
@@ -104,13 +105,13 @@ my $PLAN_NAME_PREFIX = qr/^\s*\[[+X-]\]\s*/i;
 		unless ( $args{first_url} && $args{first_url} =~ /^\s*http/ ) {
 			die "Must specify a first page URL using: first_url => 'http / http...'"
 		}
-		
+
 		$args{first_url} =~ s/^\s*//;
 		$args{first_url} =~ s/\s*$//;
-		
+
 		$args{first_post_id} ||= 0;
 		$args{last_post_id}  ||= $args{stop_id} || 0;
-		
+
 		$args{ exclude_users } ||= [];
 
 		#    usernames should start with '@', but only one '@'.  Turn
@@ -122,7 +123,7 @@ my $PLAN_NAME_PREFIX = qr/^\s*\[[+X-]\]\s*/i;
 				map { /^@/ ? $_ : '@' . $_ }
 					@names
 		};
-		
+
 		$data = \%args;
 	}
 }
@@ -139,7 +140,6 @@ sub generate_report {
 					map { get_posts($_) }
 						$root, map { make_root($_) }
 							get_page_urls_after( $root )
-								
 						)
 		)
 	);
@@ -571,14 +571,16 @@ sub format_plans {
 		$voters = join(', ', sort { lc $a cmp lc $b } keys %$voters);
 		DEBUG "Plan name is: '$name'";
 
+		my $spacing = space();
+		my $newlines = ("\n")x$spacing;
+
 		my $x = qq{
 [B]Plan name: [URL=${link}]${name}[\/url][\/B]
 Voters: ${voters}
-Num votes:  ${num_voters}
+Num votes:  ${num_voters}$newlines
 };
 	};
 
-	say "\n\n\n";
 	my $result = "\[b\]CounterBot, version $VERSION\[\/b\]\n\n";
 	$result .= join('',
 		 map { $format_plan->($_) }

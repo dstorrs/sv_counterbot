@@ -6,7 +6,7 @@ SYNOPSIS
     so questers can vote for multiple plans.
 
 SYNOPSIS
-        $ ./perl_tallyho.pl --page http://forums.sufficientvelocity.../page-2  [--id 111] [--stop 212] [--gm bob,kim]
+        $ ./perl_tallyho.pl --page http://forums.sufficientvelocity.../page-2  [--id 111] [--stop 212] [--gm bob,kim] [--space 3]
 
     (NB: The square brackets mean 'optional parameter'.  Do not
     actually include the '[' or ']' on your command line.)
@@ -14,14 +14,57 @@ SYNOPSIS
     The above command says "start with this URL and roll forward to
     the end of the thread. Ignore anything before post #111 and stop
     when you get to post #212. The GMs are users 'bob' and 'kim', so
-    ignore their posts."
+    ignore their posts.  Finally, give me 2 extra blank lines (total
+    of 3) between plans in the output."
 
-    Anything in [quote] tags will be ignored. Anything by someone listed as
-    a GM will be ignored.
+    Anything in [quote][/quote] tags will be ignored. Anything by
+    someone listed as a GM will be ignored.
 
     NOTE: SV does not use, and will not respond to, URLs ending in 'page-1'.
     If you get an empty report back, the first thing to do is verify that
     the URL you used actually works.
+
+COMMAND LINE PARAMETERS
+
+    Parameters can be given in two forms: two hypens followed by the
+    full name of the parameter, or a single hyphen followed by one
+    letter.  These examples are equivalent:
+
+        ./perl_tallyho.pl --start https://a-big-long-url
+        ./perl_tallyho.pl -s      https://a-big-long-url
+
+    --start <URL> (aliases: --page, -s, -p)
+    Specifies the URL to start counting at.  Note that you cannot have
+      'page-1' on your URL, as SV considers that to be an invalid URL.
+
+	--id <NUMBER>
+    The first post ID that should be included in the tally.  Note that
+    the 'gm' flag will trump this; if you specify --id 10 but post #10
+    was written by someone marked as a GM then #10 will be ignored as
+    expected.
+	
+    --stop <NUMBER>
+    The last post that should be included in the tally. i.e., "--stop
+    20" means that post #20 *will* be counted.
+
+    --gm bob,kim,tom
+    --gm "bob,Annoying User With Spaces In His Name"   #  Note the double quotes!
+    --gm bob --gm kim --tom
+    Specify users whose posts should be ignored.  Typically you want
+    to ignore gamemaster posts, which is why the parameter is 'gm'.
+    Note that you can either use --gm each time or combine all the
+    names into one comma-separated string.  If you have usernames that
+    include spaces you'll need to wrap the whole thing in double
+    quotes.  If you have usernames that include commas then you need a
+    better class of username
+
+    --space <NUMBER>
+    By default there will be 1 blank line between plans.  Some
+    browsers (Chrome and Safari) have different ideas about what a
+    "blank line" is and will collapse the whole report together.  Use
+    '--space' to work around this.  --space 2 means use 2 blank lines,
+    --space 3 means use three, etc.
+
 
 DESCRIPTION
     Reads through from the specified page (or post) to the last page in the
@@ -97,7 +140,7 @@ EDGE CASES AND NOTES
     There's not much to do about this, so ask the players not to retcon
     their votes.
 
-  Voting by username
+  Voting by username is deliberately not supported
     The other tallybots on SV support voting by username, like so:
 
     In post #2 Alice writes: "[x] Plan Take Back Our Library From The Bad

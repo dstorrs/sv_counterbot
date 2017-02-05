@@ -1,4 +1,4 @@
-#!/usr/bin/env perl 
+#!/usr/bin/env perl
 
 #perl2exe_include "HTML::TreeBuilder";
 #perl2exe_include "Forum::SufficientVelocity";
@@ -18,24 +18,38 @@ use constant BASE_URL => 'https://forums.sufficientvelocity.com/';
 
 #    Search '=head1' for docs
 
-#---------- Get all necessary command values 
+#---------- Get all necessary command values
 
-my ($first_post_id, $first_url, $GMs, $stop, $debug) = get_cli_options();
+my ($first_post_id, $first_url, $GMs, $temp, $stop, $space, $debug) = (0);
 our $DEBUG = $debug || 0;
+
+GetOptions("page|start|p|s=s"   => \$first_url,         # string
+		   "first_post|id=i"    => \$first_post_id,		# integer
+		   "gm=s@"              => \$temp,
+		   "stop=i"             => \$stop,
+		   "space=i"            => \$space,
+		   "debug"              => \$debug,
+	   )  or die("Error in command line arguments\n");
+
+#  Support both: '--gm bob --gm tom'  and '--gm bob,tom'
+@$GMs = split(',', join(',', @{ $temp || []}));
+
+check_usage( $first_url, $first_post_id, $GMs, $stop );
 
 #    Set some defaults
 if ( ! @$GMs ) {
-	no warnings 'experimental::smartmatch';  # 'when' will warn even if there's no ~~ involved
+	no warnings 'experimental::smartmatch';	# 'when' will warn even if there's no ~~ involved
 
 	for ($first_url) {
 		when (/slivers-in-the-chaos-lands/) { @$GMs = qw/eaglejarl/ }
 		when (/ninja-trails-kung-fu-battle-wizards-in-the-real-world/) { @$GMs = qw/Radvic/ }
 		when (/marked-for-death/)           { @$GMs = qw/eaglejarl Jackercracks
-														 AugSphere Velorien/; }
+														 AugSphere Velorien OliWhail/; }
 		default {}
 	}
 }
-$stop ||= 0;
+$stop  ||= 0;
+$space ||= 1;
 
 $first_url = BASE_URL . $first_url  unless $first_url =~ /^https?:/;
 
@@ -44,6 +58,7 @@ init(
 	first_post_id   => $first_post_id,
 	exclude_users   => $GMs,
 	stop_id         => $stop,
+	space           => $space,
 );
 
 generate_report();
@@ -52,26 +67,6 @@ exit(0);
 
 ###----------------------------------------------------------------------
 ###----------------------------------------------------------------------
-###----------------------------------------------------------------------
-
-sub get_cli_options {
-	my ($first_post_id, $first_url, $GMs, $temp, $stop, $debug) = (0);
-	
-	GetOptions("page|start|p|s=s"   => \$first_url,         # string
-			   "first_post|id=i"    => \$first_post_id,      # integer
-			   "gm=s@"              => \$temp,
-			   "stop=i"             => \$stop,
-			   "debug"              => \$debug,
-		   )  or die("Error in command line arguments\n");
-
-	#  Support both: '--gm bob --gm tom'  and '--gm bob,tom'
-	@$GMs = split(',', join(',', @{ $temp || []}));
-
-	check_usage( $first_url, $first_post_id, $GMs, $stop );
-	
-	return ($first_post_id, $first_url, $GMs, $stop, $debug);
-}
-
 ###----------------------------------------------------------------------
 
 sub check_usage {
@@ -105,15 +100,15 @@ at the end summarizing who voted for what.  A typical report might be:
     [B]Plan name: [URL=https://forums.sufficientvelocity.com/posts/5468116/]Arrival  [/url][/B]
     Voters: @AZATHOTHoth, @Citrus, @FullNothingness, @godofbiscuit, @Jackercracks, @Kingspace, @Sigil, @tarrangar, @TempestK, @TheEyes, @Void Stalker
     Num votes:  11
-    
+
     [B]Plan name: [URL=https://forums.sufficientvelocity.com/posts/5469924/]Arrival + Wands[/url][/B]
     Voters: @Angle, @DonLyn, @FullNothingness, @HyperCatnip, @Jackercracks, @Radvic, @rangerscience, @RedV, @Solace
     Num votes:  9
-    
+
     [B]Plan name: [URL=https://forums.sufficientvelocity.com/posts/5469924/]Arrival + Wands + Survivors[/url][/B]
     Voters: @Angle, @Jack Stargazer, @Jackercracks, @rangerscience, @TheEyes
     Num votes:  5
-    
+
     ...etc...
 
 The various plans are linked back to where they were defined and
@@ -132,7 +127,7 @@ same codebase as SV -- SpaceBattles and Questionable Questing should
 be fine, although that hasn't been tested.
 
 
-=head1  EDGE CASES 
+=head1  EDGE CASES
 
 Once in a while you'll see this:
 
@@ -141,7 +136,7 @@ Once in a while you'll see this:
  - Al goes back and edits post #2 to contain a vote for "Do FOO".
 
 In this case the plan will be linked to post #2, since that was where
-CounterBot first saw the plan referenced.  
+CounterBot first saw the plan referenced.
 
 =head1  TODO
 
