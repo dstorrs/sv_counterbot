@@ -205,6 +205,28 @@ is_deeply(
 	   )
 }
 
+{
+  my $cache_dir = Forum::SufficientVelocity::cache_dir();
+  my $files = sub { grep { ! /^\.\.?$/ } glob "'$cache_dir/*'" };
+
+  Forum::SufficientVelocity::init( 'first_url' => $url );
+  make_root($url);
+
+  my @files = $files->();
+  ok scalar @files,
+    "There is at least one file in the cache";
+
+  my $fh = IO::File->new("$cache_dir/cache_created", ">");
+  ok $fh, "successfully opened the cache_created file";
+  print $fh (time() - 3600);
+  undef $fh;
+  Forum::SufficientVelocity::maybe_clear_cache();
+  @files = $files->();
+  is scalar @files,
+    0,
+    "After maybe_clear_cache there are no files in the cache";
+}
+
 done_testing();
 exit;
 

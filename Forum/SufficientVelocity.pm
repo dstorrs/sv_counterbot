@@ -11,6 +11,7 @@ use HTML::TreeBuilder 5 -weak;
 use File::Slurp qw/slurp/;
 use LWP::UserAgent::OfflineCache;
 use Cwd qw/abs_path/;
+use File::stat;
 
 use constant BASE_URL => 'https://forums.sufficientvelocity.com/';
 use constant VERBOSE => 0;
@@ -18,7 +19,7 @@ use constant VERBOSE => 0;
 #Log::Log4perl->easy_init( $DEBUG );
 Log::Log4perl->easy_init( $ERROR );
 
-our $VERSION = 1.7;
+our $VERSION = 2.0;
 our $POSTS_PER_PAGE = 25; # Deliberately made a package variable
 
 our (@ISA, @EXPORT_OK, @EXPORT);
@@ -95,7 +96,8 @@ my $PLAN_NAME_PREFIX = qr/^\s*\[[+X-]\]\s*/i;
 
     sub init {
 	my %args = @_;
-
+	#say "Calling F::SV::init with args: ", Dumper \%args;
+	
 	#    Options:
 	# first_url      => 'http...',
 	# first_post_id  => 2,
@@ -125,7 +127,30 @@ my $PLAN_NAME_PREFIX = qr/^\s*\[[+X-]\]\s*/i;
 	    @names
 	};
 
+	maybe_clear_cache();
+	
 	$data = \%args;
+    }
+}
+
+###----------------------------------------------------------------------
+
+sub maybe_clear_cache {
+    my $dir = cache_dir();
+    my $path = File::Spec->catfile( $dir, "cache_created");
+
+    if ( ! -e $path ) { 
+        my $fh = IO::File->new($path, ">");
+        if (defined $fh) {
+	    print $fh time();
+            $fh->close;
+        }
+    }
+    else {
+	my $created_time = 0 + slurp $path;
+	if (time() > ($created_time + (60 * 60))) {
+	    unlink glob "'./cache/*'"; # Clear the cache directory
+	}	
     }
 }
 
@@ -530,7 +555,9 @@ sub tally_plans {
 ###----------------------------------------------------------------------
 
 sub cache_dir {
-    File::Spec->catfile( (File::Spec->splitpath( abs_path($0) ))[1], "cache")
+    my $dir = File::Spec->catfile( (File::Spec->splitpath( abs_path($0) ))[1], "cache");
+    #say "dir is: '$dir'";
+    return $dir;
 }
 
 ###----------------------------------------------------------------------
