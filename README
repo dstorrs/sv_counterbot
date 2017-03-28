@@ -71,6 +71,12 @@ DESCRIPTION
     thread, compiles a list of all votes, and then spits out a report at the
     end summarizing who voted for what.
 
+    Pages are cached for 1 hour, so if you run it once and then again
+    a little bit later it won't have to download the pages again the
+    second time.  On each run we always fetch the page that you are
+    starting from and the last-downloaded page from the previous run
+    so as to ensure we are not working with stale data.
+
   How to Vote
     Votes can look like any of these:
 
