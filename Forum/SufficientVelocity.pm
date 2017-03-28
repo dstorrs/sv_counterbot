@@ -12,6 +12,7 @@ use File::Slurp qw/slurp/;
 use LWP::UserAgent::OfflineCache;
 use Cwd qw/abs_path/;
 use File::stat;
+use Digest::MD5 qw/md5_hex/;
 
 use constant BASE_URL => 'https://forums.sufficientvelocity.com/';
 use constant VERBOSE => 0;
@@ -19,7 +20,7 @@ use constant VERBOSE => 0;
 #Log::Log4perl->easy_init( $DEBUG );
 Log::Log4perl->easy_init( $ERROR );
 
-our $VERSION = 2.0;
+our $VERSION = "2.0";
 our $POSTS_PER_PAGE = 25; # Deliberately made a package variable
 
 our (@ISA, @EXPORT_OK, @EXPORT);
@@ -96,7 +97,6 @@ my $PLAN_NAME_PREFIX = qr/^\s*\[[+X-]\]\s*/i;
 
     sub init {
 	my %args = @_;
-	#say "Calling F::SV::init with args: ", Dumper \%args;
 	
 	#    Options:
 	# first_url      => 'http...',
@@ -127,30 +127,56 @@ my $PLAN_NAME_PREFIX = qr/^\s*\[[+X-]\]\s*/i;
 	    @names
 	};
 
-	maybe_clear_cache();
-	
 	$data = \%args;
+
+	fix_cache();
+
+	return $data;
     }
 }
 
 ###----------------------------------------------------------------------
 
-sub maybe_clear_cache {
+sub fix_cache {
     my $dir = cache_dir();
-    my $path = File::Spec->catfile( $dir, "cache_created");
+    my $created_path = File::Spec->catfile( $dir, "_cache_created");
+    my $first_url_path = File::Spec->catfile($dir, Digest::MD5::md5_hex(first_url()));
 
-    if ( ! -e $path ) { 
-        my $fh = IO::File->new($path, ">");
+    #    Always clear the file we're going to start with, since we'll
+    #    be getting the list of pages from it.
+    if ( -e $first_url_path ) {
+	unlink $first_url_path;
+	if ( -e $first_url_path ) {
+	    say STDERR "Could not unlink cached version of path ", first_url(), "! (Should be at $first_url_path";
+	    exit;
+	}
+    }; 
+    
+    #    Always clear the last file we got last time, since we don't
+    #    want to use a stale version of it.
+    my $last_file = File::Spec->catfile($dir, "_last_file_fetched");
+    if ( -e $last_file ) {
+	my $filename = slurp $last_file;
+	chomp $filename;
+	my $filepath = File::Spec->catfile($dir, $filename);
+	unlink $filepath;
+	if ( -e $filepath ) {
+	    say STDERR "Couldn't delete the cached file that was the last page last time we ran.  A stale version will be used so some votes on that page might be skipped.";
+	}
+    }
+
+    if ( ! -e $created_path ) { 
+        my $fh = IO::File->new($created_path, ">");
         if (defined $fh) {
 	    print $fh time();
             $fh->close;
         }
     }
     else {
-	my $created_time = 0 + slurp $path;
+	my ($created_time) = map { chomp; $_ } slurp($created_path);
 	if (time() > ($created_time + (60 * 60))) {
 	    unlink glob "'./cache/*'"; # Clear the cache directory
-	}	
+	}
     }
 }
 
@@ -228,6 +254,15 @@ sub get_page_urls_after {
     return () if $current_page > $last_page;
     my @urls = map { $base_url . $_ }  ( $current_page .. $last_page );
 
+    #    Remember what the last page fetched was so that we can clean
+    #    it out of the cache on the next run.
+    my $dir = cache_dir();
+    my $fh  = IO::File->new( File::Spec->catfile($dir, "_last_file_fetched"), ">");
+    if ( $fh ) {
+	my $u = $urls[-1];
+	print $fh md5_hex("$u");
+	undef $fh;
+    }
     return @urls;
 }
 
