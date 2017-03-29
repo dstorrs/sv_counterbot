@@ -6,7 +6,7 @@ SYNOPSIS
     so questers can vote for multiple plans.
 
 SYNOPSIS
-        $ ./perl_tallyho.pl --page http://forums.sufficientvelocity.../page-2  [--id 111] [--stop 212] [--gm bob,kim] [--space 3]
+        $ ./perl_tallyho.pl --page http://forums.sufficientvelocity.../page-2  [--id 111] [--stop 212] [--gm bob,kim] [--space 3] [--clear-cache]
 
     (NB: The square brackets mean 'optional parameter'.  Do not
     actually include the '[' or ']' on your command line.)
@@ -14,8 +14,8 @@ SYNOPSIS
     The above command says "start with this URL and roll forward to
     the end of the thread. Ignore anything before post #111 and stop
     when you get to post #212. The GMs are users 'bob' and 'kim', so
-    ignore their posts.  Finally, give me 2 extra blank lines (total
-    of 3) between plans in the output."
+    ignore their posts.  Finally, give me a total of 3 blank lines
+    between plans in the output."
 
     Anything in [quote][/quote] tags will be ignored. Anything by
     someone listed as a GM will be ignored.
@@ -37,7 +37,7 @@ COMMAND LINE PARAMETERS
     Specifies the URL to start counting at.  Note that you cannot have
       'page-1' on your URL, as SV considers that to be an invalid URL.
 
-	--id <NUMBER>
+    --id <NUMBER>
     The first post ID that should be included in the tally.  Note that
     the 'gm' flag will trump this; if you specify --id 10 but post #10
     was written by someone marked as a GM then #10 will be ignored as
@@ -65,7 +65,28 @@ COMMAND LINE PARAMETERS
     '--space' to work around this.  --space 2 means use 2 blank lines,
     --space 3 means use three, etc.
 
+    --clear-cache
+    
+    By default CounterBot caches pages as it downloads them so that
+    the next time you run the report it doesn't have to fetch them
+    again.  In order to avoid using stale data every run will always
+    fetch two pages: the one you specify to start at and the last one
+    that was fetched last time.  The page you specify to start at is
+    the one that tells CounterBot how many pages are in the thread, so
+    we need to refresh that each time.  The last page from the
+    previous run might have received extra posts since we checked it,
+    so we need to fetch that.
 
+    By default the cache is never flushed, which means that if users
+    edit their posts to change their votes, the edits will not be
+    seen.  This is a design choice, not a bug; history matters and
+    revisionists should be punished.  If users want to change their
+    votes they should issue a cancel and a new vote.  If, however, you
+    want to coddle them then you can use the '--clear-cache' parameter
+    to make CounterBot fetch all the pages fresh.  (You could probably
+    use it for other reasons too, such as if you suspected that some
+    pages weren't correctly fetched last time or etc.)
+    
 DESCRIPTION
     Reads through from the specified page (or post) to the last page in the
     thread, compiles a list of all votes, and then spits out a report at the

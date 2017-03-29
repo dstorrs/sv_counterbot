@@ -20,7 +20,7 @@ use constant VERBOSE => 0;
 #Log::Log4perl->easy_init( $DEBUG );
 Log::Log4perl->easy_init( $ERROR );
 
-our $VERSION = "2.0";
+our $VERSION = "2.1";
 our $POSTS_PER_PAGE = 25; # Deliberately made a package variable
 
 our (@ISA, @EXPORT_OK, @EXPORT);
@@ -94,6 +94,7 @@ my $PLAN_NAME_PREFIX = qr/^\s*\[[+X-]\]\s*/i;
     sub first_url     { _get_data('first_url')     }
     sub stop_id       { _get_data('stop_id') || 0  }
     sub space         { _get_data('space')   || 1  }
+    sub clear_cache   { _get_data('clear_cache')   }
 
     sub init {
 	my %args = @_;
@@ -165,6 +166,14 @@ sub fix_cache {
 	}
     }
 
+    #    Note that we are recording the time the cache was created
+    #    purely for informational reasons.  I used to expire it after
+    #    a certain amount of time but that got to be annoying.
+    #    Instead I've added the 'clear-cache' command line switch so
+    #    people can do it manually if they really want to.  Voters
+    #    should not be retconning their votes, and deserve to be
+    #    ignored if they do.  If they want to change their vote they
+    #    can issue a cancel and new vote.  History matters.
     if ( ! -e $created_path ) { 
         my $fh = IO::File->new($created_path, ">");
         if (defined $fh) {
@@ -172,11 +181,9 @@ sub fix_cache {
             $fh->close;
         }
     }
-    else {
-	my ($created_time) = map { chomp; $_ } slurp($created_path);
-	if (time() > ($created_time + (60 * 60))) {
-	    unlink glob "'./cache/*'"; # Clear the cache directory
-	}
+
+    if ( clear_cache() ) {
+	unlink glob "'./cache/*'"; # Clear the cache directory
     }
 }
 

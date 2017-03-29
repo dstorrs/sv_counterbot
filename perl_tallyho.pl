@@ -20,16 +20,17 @@ use constant BASE_URL => 'https://forums.sufficientvelocity.com/';
 
 #---------- Get all necessary command values
 
-my ($first_post_id, $first_url, $GMs, $temp, $stop, $space, $debug) = (0);
+my ($first_post_id, $first_url, $GMs, $temp, $stop, $space, $debug, $clear_cache) = (0);
 our $DEBUG = $debug || 0;
 
-GetOptions("page|start|p|s=s"   => \$first_url,         # string
-		   "first_post|id=i"    => \$first_post_id,		# integer
-		   "gm=s@"              => \$temp,
-		   "stop=i"             => \$stop,
-		   "space=i"            => \$space,
-		   "debug"              => \$debug,
-	   )  or die("Error in command line arguments\n");
+GetOptions("page|start|p|s=s"   => \$first_url,		    # string
+	   "first_post|id=i"    => \$first_post_id,	    # integer
+	   "gm=s@"              => \$temp,
+	   "stop=i"             => \$stop,
+	   "space=i"            => \$space,
+	   "debug"              => \$debug,
+	   "clear-cache"        => \$clear_cache,
+	  )  or die("Error in command line arguments\n");
 
 #  Support both: '--gm bob --gm tom'  and '--gm bob,tom'
 @$GMs = split(',', join(',', @{ $temp || []}));
@@ -38,15 +39,15 @@ check_usage( $first_url, $first_post_id, $GMs, $stop );
 
 #    Set some defaults
 if ( ! @$GMs ) {
-	no warnings 'experimental::smartmatch';	# 'when' will warn even if there's no ~~ involved
+  no warnings 'experimental::smartmatch'; # 'when' will warn even if there's no ~~ involved
 
-	for ($first_url) {
-		when (/slivers-in-the-chaos-lands/) { @$GMs = qw/eaglejarl/ }
-		when (/ninja-trails-kung-fu-battle-wizards-in-the-real-world/) { @$GMs = qw/Radvic/ }
-		when (/marked-for-death/)           { @$GMs = qw/eaglejarl Jackercracks
-														 AugSphere Velorien OliWhail/; }
-		default {}
-	}
+  for ($first_url) {
+    when (/slivers-in-the-chaos-lands/) { @$GMs = qw/eaglejarl/ }
+    when (/ninja-trails-kung-fu-battle-wizards-in-the-real-world/) { @$GMs = qw/Radvic/ }
+    when (/marked-for-death/)           { @$GMs = qw/eaglejarl Jackercracks
+						     AugSphere Velorien OliWhail/; }
+    default {}
+  }
 }
 $stop  ||= 0;
 $space ||= 1;
@@ -54,12 +55,13 @@ $space ||= 1;
 $first_url = BASE_URL . $first_url  unless $first_url =~ /^https?:/;
 
 init(
-	first_url       => $first_url,
-	first_post_id   => $first_post_id,
-	exclude_users   => $GMs,
-	stop_id         => $stop,
-	space           => $space,
-);
+     first_url       => $first_url,
+     first_post_id   => $first_post_id,
+     exclude_users   => $GMs,
+     stop_id         => $stop,
+     space           => $space,
+     clear_cache     => $clear_cache,
+    );
 
 generate_report();
 
@@ -70,10 +72,10 @@ exit(0);
 ###----------------------------------------------------------------------
 
 sub check_usage {
-	my ( $start_page, $first_post_id, $GMs, $stop ) = @_;
+  my ( $start_page, $first_post_id, $GMs, $stop ) = @_;
 
-	die "No start page specified. Use '--start <URL>'\n" unless $start_page;
-	die "First post ID cannot be negative"    unless $first_post_id >= 0;
+  die "No start page specified. Use '--start <URL>'\n" unless $start_page;
+  die "First post ID cannot be negative"    unless $first_post_id >= 0;
 }
 
 
